@@ -17,6 +17,9 @@ export default {
     text-decoration: none;
     color: #787878;
   }
+  ul li {
+    list-style: none;
+  }
 
   // 链接
   a.link {

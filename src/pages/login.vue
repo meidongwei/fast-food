@@ -84,7 +84,9 @@ export default {
   methods: {
     login () {
       if (this.usernum === 'admin' && this.password === '123') {
-        console.log('success')
+        this.$router.push({name: 'index'})
+      } else {
+        alert('用户名或密码错误！')
       }
     },
     handleShowQuiteDialog () {
