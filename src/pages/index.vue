@@ -88,7 +88,29 @@ export default {
   },
   mounted () {
     // 刷新页面侧边栏导航状态不消失
-    this.isSelect = this.$route.name
+    let path = this.$route.path
+    let lastNum = path.lastIndexOf('/')
+    if (lastNum === 6) {
+      this.isSelect = path.substring(7)
+    } else {
+      this.isSelect = path.substring(7,lastNum)
+    }
+  },
+  computed: {
+    routePath () {
+      return this.$route.path
+    }
+  },
+  watch: {
+    // 实时监听路由地址，点击浏览器返回按键时，侧边栏导航状态实时更新
+    routePath (path) {
+      let lastNum = path.lastIndexOf('/')
+      if (lastNum === 6) {
+        this.isSelect = path.substring(7)
+      } else {
+        this.isSelect = path.substring(7,lastNum)
+      }
+    }
   },
   methods: {
     // 页面跳转
@@ -119,7 +141,7 @@ export default {
     .index-sidebar {
       width: 60px;
       height: 768px;
-      background-color: #373737;
+      background-color: #29292a;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
