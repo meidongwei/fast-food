@@ -109,6 +109,37 @@ export default {
       justify-content: flex-start;
       align-items: center;
       padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+  .form-group {
+    margin-bottom: 20px;
+    label {
+      font-size: 20px;
+      color: #656565;
+    }
+    label.flag {
+      position: relative;
+    }
+    label.flag::after {
+      content: '*';
+      color: red;
+      position: absolute;
+      left: -15px;
+      top: 3px;
+    }
+    .form-control {
+      height: 50px;
+      width: 320px;
+      box-sizing: border-box;
+      font-size: 20px;
+      padding: 0 10px;
+      background-color: #fff;
+      border: 0px;
+      border: none;
+      border-bottom: 1px solid $border-color-lighter;
+      -webkit-appearance: none;
+      -webkit-border-radius: 0px;
     }
   }
 </style>

@@ -12,6 +12,13 @@ export default {
   * {
     padding: 0;
     margin: 0;
+    // 屏蔽双击、长按选中文字功能
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
   }
   a {
     text-decoration: none;
@@ -37,6 +44,14 @@ export default {
   .btn-default {
     background-color: #f5f5f5;
     color: #3d3d3d;
+  }
+  .btn-default-dark {
+    background-color: #797979;
+    color: #fff;
+  }
+  .btn-danger {
+    background-color: #f56c5e;
+    color: #fff;
   }
   .btn-primary {
     background-color: $primary-color;
