@@ -11,6 +11,8 @@ import cardAdd from '@/pages/index/card/cardAdd'
 import cardQuery from '@/pages/index/card/cardQuery'
 import cardRecharge from '@/pages/index/card/cardRecharge'
 import cardCancel from '@/pages/index/card/cardCancel'
+import closePage from '@/pages/index/close/closePage'
+import zdcx from '@/pages/index/report/zdcx'
 
 Vue.use(Router)
 
@@ -63,12 +65,28 @@ export default new Router({
         {
           path: 'close',
           name: 'close',
-          component: close
+          component: close,
+          redirect: 'close/closePage',
+          children: [
+            {
+              path: 'closePage',
+              name: 'closePage',
+              component: closePage
+            }
+          ]
         },
         {
           path: 'report',
           name: 'report',
-          component: report
+          component: report,
+          redirect: 'report/zdcx',
+          children: [
+            {
+              path: 'zdcx',
+              name: 'zdcx',
+              component: zdcx
+            }
+          ]
         },
         {
           path: 'setting',

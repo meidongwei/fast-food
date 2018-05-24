@@ -1,26 +1,21 @@
 <template>
   <div style="display:flex;">
-    <div class="segment-left">
-      <div class="left-title">会员管理</div>
-      <div class="subBar">
-        <ul>
-          <li v-for="item in subBarList" :keys="item.id">
-            <a href="javascript:;" @click="goto(item)"
-              :class="isSelect === item.value ? 'subActive' : ''">
-              {{ item.name }}
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
+    <subSideBarComponent :isSelect="isSelect" :title="title"
+      :subBarList="subBarList" @goto="goto">
+    </subSideBarComponent>
     <router-view/>
   </div>
 </template>
 
 <script>
+import subSideBarComponent from '@/components/subSideBarComponent'
 export default {
+  components: {
+    subSideBarComponent
+  },
   data () {
     return {
+      title: '会员管理',
       isSelect: 'cardAdd',
       subBarList: [
         {
@@ -50,6 +45,17 @@ export default {
     // 刷新页面侧边栏导航状态不消失
     this.isSelect = this.$route.name
   },
+  computed: {
+    routePath () {
+      return this.$route.name
+    }
+  },
+  watch: {
+    // 实时监听路由地址，点击浏览器返回按键时，侧边栏导航状态实时更新
+    routePath (pathName) {
+      this.isSelect = pathName
+    }
+  },
   methods: {
     goto (val) {
       this.$router.push({name: val.value})
@@ -60,62 +66,10 @@ export default {
 </script>
 
 <style lang="scss">
-  .segment-left {
-    box-sizing: border-box;
-    border: 1px solid $border-color-lighter;
-    width: 220px;
-    height: 748px;
-    margin-top: 10px;
-    margin-right: 10px;
-    .left-title {
-      height: 55px;
-      border-bottom: 1px solid $border-color-lighter;
-      font-size: 20px;
-      color: #696969;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .subBar {
-      ul li a {
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-        border-bottom: 1px solid $border-color-lighter;
-        width: 100%;
-        height: 60px;
-        box-sizing: border-box;
-        font-size: 18px;
-        padding-left: 15px;
-      }
-    }
-    .subActive {
-      background-color: #f4f4f4;
-    }
-  }
-  .segment-right {
-    box-sizing: border-box;
-    border: 1px solid $border-color-lighter;
-    width: 714px;
-    height: 748px;
-    margin-top: 10px;
-    margin-right: 10px;
-    .right-title {
-      height: 55px;
-      border-bottom: 1px solid $border-color-lighter;
-      font-size: 20px;
-      color: #696969;
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      padding-left: 15px;
-      padding-right: 15px;
-    }
-  }
   .form-group {
     margin-bottom: 20px;
     label {
-      font-size: 20px;
+      font-size: 16px;
       color: #656565;
     }
     label.flag {
@@ -130,9 +84,9 @@ export default {
     }
     .form-control {
       height: 50px;
-      width: 320px;
+      width: 230px;
       box-sizing: border-box;
-      font-size: 20px;
+      font-size: 16px;
       padding: 0 10px;
       background-color: #fff;
       border: 0px;
@@ -140,6 +94,16 @@ export default {
       border-bottom: 1px solid $border-color-lighter;
       -webkit-appearance: none;
       -webkit-border-radius: 0px;
+    }
+  }
+  .btn-box {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    width: 100%;
+    a {
+      display: block;
+      width: 290px;
     }
   }
 </style>
