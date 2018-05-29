@@ -17,21 +17,43 @@
         <input type="text" placeholder="数量/台卡号/现金/订单号"
           v-model="inputNum">
         <div class="inputClear" v-if="inputNum != ''"
-          @click="handleChearInput">x</div>
+          @click="handleClearInput">x</div>
       </div>
       <div class="index-order-con">
-        <ul>
+        <ul class="main">
           <li v-for="(item, index) in menuList" :keys="item.id"
-            @click="handleSelectMenu(index)"
+            @click="handleSelectMenu(item, index)"
             :class="{'active': index === nowMenuIndex}">
             <div class="info">
-              <span>{{ item.name }}</span>
-              <span>{{ item.num }}</span>
-              <span>{{ item.price }}.00</span>
+              <span class="desc" v-if="item.contain && showSub">-</span>
+              <span class="desc" v-if="item.contain && !showSub">+</span>
+              <span class="name">{{ item.name }}</span>
+              <span class="num">{{ item.num }}</span>
+              <span class="price">{{ item.price*item.num }}.00</span>
             </div>
+            <ul class="sub" v-if="item.contain && showSub">
+              <li v-for="(subItem, subIndex) in item.contain" :keys="subItem.id"
+                @click.stop="handleSelectSubMenu(subIndex, index)"
+                :class="{'subActive': subIndex === nowSubMenuIndex}">
+                <div class="info">
+                  <span class="name">{{ subItem.name }}</span>
+                  <span class="num">{{ subItem.count }}</span>
+                </div>
+                <div class="others" v-if="subItem.others">
+                  <span>
+                    备注：{{ subItem.others | prettifyList }}
+                  </span>
+                  <span v-if="subIndex === nowSubMenuIndex"
+                    @click.stop="handleClearSubOthers">X</span>
+                </div>
+              </li>
+            </ul>
             <div class="others" v-if="item.others">
-              <span>备注：{{ item.others }}</span>
-              <span v-if="index === nowMenuIndex">X</span>
+              <span>
+                备注：{{ item.others | prettifyList }}
+              </span>
+              <span v-if="index === nowMenuIndex"
+                @click.stop="handleClearOthers">X</span>
             </div>
           </li>
         </ul>
@@ -49,50 +71,50 @@
     <!-- 点菜操作区域 -->
     <div class="index-option">
       <div class="index-option-topbar">
-        <ul class="data">
-          <li v-for="(item, index) in topbarList"
-            @click="handleSelectTopbar(index)"
-            :class="{'active': nowTopbarIndex === index}">
+        <ul class="table table-data">
+          <li v-for="item in topbarList"
+            @click="handleSelectTopbar(item.id)"
+            :class="{'active': nowTopbarIndex === item.id}">
             <a href="javascript:;">{{ item.name }}</a>
           </li>
         </ul>
         <ul class="table">
-          <li></li><li></li><li></li><li></li><li></li><li>&gt;</li>
+          <li></li><li></li><li></li><li></li><li></li>
+          <li class="next" @click="handleTopbarNext">&gt;</li>
         </ul>
       </div>
       <div class="index-option-con">
-        <div class="con">
+        <div class="table table-data">
           <div class="option-item" v-for="item in orderList"
             :keys="item.id" @click="handleAddDish(item)">
-            <div class="item-price" v-if="item.price">
+            <div class="item-price">
               {{ item.price }}.00
             </div>
             <div class="item-name">{{ item.name }}</div>
-            <div class="item-real-price" v-if="item.realPrice">
-              特价：{{ item.realPrice }}.00
+            <div class="item-real-price">
+              特价：{{ item.nowPrice }}.00
             </div>
           </div>
         </div>
-        <table>
-          <tr><td></td><td></td><td></td><td></td><td></td></tr>
-          <tr><td></td><td></td><td></td><td></td><td></td></tr>
-          <tr><td></td><td></td><td></td><td></td><td></td></tr>
-          <tr><td></td><td></td><td></td><td></td>
-            <td class="next">&gt;</td>
-          </tr>
-        </table>
+        <div class="table">
+          <div></div><div></div><div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div>
+          <div class="next" @click="handleOrderNext">&gt;</div>
+        </div>
       </div>
       <div class="index-option-else">
-        <div class="con">
-          <div class="else-item" v-for="item in 4">
-            不加冰
+        <div class="table table-data">
+          <div v-for="(item, index) in othersList" :keys="index"
+            @click="handleAddOthers(item)">
+            {{ item.name }}
           </div>
         </div>
-        <table>
-          <tr><td></td><td></td><td></td><td></td>
-            <td class="else-right">&gt;</td>
-          </tr>
-        </table>
+        <div class="table">
+          <div></div><div></div><div></div><div></div>
+          <div class="next" @click="handleElseNext">&gt;</div>
+        </div>
       </div>
       <div class="index-option-handle">
         <table class="handle-keyboard1">
@@ -145,14 +167,23 @@ import axios from 'axios'
 export default {
   data () {
     return {
+      othersPageNum: 1,
+      othersPageSize: 4,
+      othersList: [],
+      showSub: true,
       showType: false,
       showMode: false,
       inputNum: '',
       nowMenuIndex: -1,
-      nowTopbarIndex: 0,
+      nowSubMenuIndex: -1,
+      nowTopbarIndex: 1,
       menuList: [],
       orderList: [],
+      orderListSource: [],
+      topbarPageNum: 1,
+      topbarPageSize: 5,
       topbarList: [],
+      topbarListSource: [],
       keyboard1List: [
         [
           {
@@ -213,8 +244,36 @@ export default {
       ]
     }
   },
+  computed: {
+  },
+  watch: {
+    /**
+     * 监听当前是否有菜品选中，如果没有选中，则清空 othersList
+     * 如果有选中，需要再判断数据源里面有没有备注信息
+     * 如果没有备注信息，则清空 othersList
+     * 如果有备注信息，则截取前4项赋值给 othersList
+     */
+    nowMenuIndex (index) {
+      if (index != -1) {
+        let id = this.menuList[index].id
+        if (this.orderListSource[id-1].others) {
+          let list = this.orderListSource[id-1].others
+          this.othersList = list.slice(0, 4)
+        } else {
+          this.othersList = []
+        }
+      } else {
+        this.othersList = []
+      }
+    }
+  },
   created () {
     this.getDatas()
+  },
+  filters: {
+    prettifyList (list) {
+      return list.toString()
+    }
   },
   methods: {
     getDatas () {
@@ -224,8 +283,19 @@ export default {
     getOrderList () {
       axios.get('http://localhost:8080/getOrderList')
         .then(res => {
+          this.orderListSource = res.data.data
           if (res.data.errcode === 0) {
-            this.orderList = res.data.data
+            let list = JSON.parse(JSON.stringify(res.data.data))
+            // 删除所有备注信息
+            list.forEach(item => {
+              delete item.others
+              if (item.contain) {
+                item.contain.forEach(subItem => {
+                  delete subItem.others
+                })
+              }
+            })
+            this.orderList = list
           } else {
             console.log(res.data.errmsg)
           }
@@ -236,7 +306,8 @@ export default {
       axios.get('http://localhost:8080/getTopbarList')
         .then(res => {
           if (res.data.errcode === 0) {
-            this.topbarList = res.data.data
+             this.topbarListSource = res.data.data
+             this.topbarList = this.topbarListSource.slice(0, 5)
           } else {
             console.log(res.data.errmsg)
           }
@@ -244,8 +315,12 @@ export default {
         .catch(err => console.log(err))
     },
     handleAddDish (dish) {
+      // 点击时清除子选项的状态
+      this.nowSubMenuIndex = -1
+      let newDish = JSON.parse(JSON.stringify(dish))
       // 获取输入框里的值（菜品数量）
       let dishCount
+      // 过滤输入框的值
       if (this.inputNum === '') {
         dishCount = 1
       } else {
@@ -268,8 +343,9 @@ export default {
           this.inputNum = ''
           return
         }
-        dish.num = dishCount
-        this.menuList.push(dish)
+
+        newDish.num = dishCount
+        this.menuList.push(newDish)
         this.nowMenuIndex = 0
       } else { // menuList 不为空，判断里面时候包含当前 dish
         let flag = false
@@ -296,8 +372,9 @@ export default {
             this.inputNum = ''
             return
           }
-          dish.num = dishCount
-          this.menuList.push(dish)
+
+          newDish.num = dishCount
+          this.menuList.push(newDish)
           this.nowMenuIndex = this.menuList.length - 1
         }
       }
@@ -305,11 +382,31 @@ export default {
       // 清空输入框
       this.inputNum = ''
     },
-    handleSelectMenu (index) {
-      if (this.nowMenuIndex === index) {
-        this.nowMenuIndex = -1
+    handleSelectMenu (item, index) {
+      if (item.contain) {
+        if (this.nowMenuIndex === index) {
+          this.nowMenuIndex = -1
+          this.showSub = false
+          this.nowSubMenuIndex = -1
+        } else {
+          this.nowMenuIndex = index
+          this.showSub = true
+        }
       } else {
-        this.nowMenuIndex = index
+        if (this.nowMenuIndex === index) {
+          this.nowMenuIndex = -1
+        } else {
+          this.nowMenuIndex = index
+          this.nowSubMenuIndex = -1
+        }
+      }
+    },
+    handleSelectSubMenu (subIndex, index) {
+      this.nowMenuIndex = index
+      if (this.nowSubMenuIndex === subIndex) {
+        this.nowSubMenuIndex = -1
+      } else {
+        this.nowSubMenuIndex = subIndex
       }
     },
     handleInputNum (td) {
@@ -319,8 +416,8 @@ export default {
         this.inputNum = this.inputNum + td.name
       }
     },
-    handleSelectTopbar (index) {
-      this.nowTopbarIndex = index
+    handleSelectTopbar (id) {
+      this.nowTopbarIndex = id
     },
     changeType () {
       this.showType = !this.showType
@@ -330,13 +427,165 @@ export default {
     },
     handleDeleteDish () {
       if (this.nowMenuIndex != -1) {
+        // 从 menuList 中删除菜品
         this.menuList.splice(this.nowMenuIndex, 1)
+        // 设置为当前不选中状态
         this.nowMenuIndex = -1
       }
     },
-    handleChearInput () {
+    handleClearInput () {
       this.inputNum = ''
+    },
+    handleClearOthers () {
+      let index = this.nowMenuIndex
+      let item = this.menuList[index]
+      delete item.others
+      this.menuList.splice(index, 1, item)
+    },
+    handleClearSubOthers () {
+      let index = this.nowMenuIndex
+      let item = this.menuList[index]
+      let subIndex = this.nowSubMenuIndex
+      let subItem = item.contain[subIndex]
+      delete subItem.others
+      item.contain.splice(subIndex, 1, subItem)
+    },
+
+    // 菜品添加备注
+    handleAddOthers (data) {
+
+      let index = this.nowMenuIndex
+      let subIndex = this.nowSubMenuIndex
+      let item = this.menuList[index]
+      let oList = []
+      oList.push(data.name)
+
+      // ps: index 为 0
+      if (index != -1) {
+        if (item.contain) {
+          // 判断子选项是否被选中
+          if (subIndex != -1) {
+            // 给子选项设置备注
+            let subItem = item.contain[subIndex]
+            this.addSubOthers(subIndex, subItem, oList, index)
+          } else {
+            console.log('不能直接给套餐添加备注')
+          }
+        } else {
+          // 给父选项添加备注
+          this.addOthers(index, item, oList)
+        }
+      }
+
+
+    },
+
+    // 添加父级备注
+    addOthers (index, item, oList) {
+      if (item.others) {
+        let flag = false
+
+        for (let i=0;i<item.others.length;i++) {
+          if (item.others[i] === oList[0]) {
+            flag = true
+            break
+          }
+        }
+
+        if (flag) {
+          console.log('有重复的')
+        } else {
+          item.others = item.others.concat(oList)
+        }
+
+      } else {
+        item.others = oList
+      }
+      this.menuList.splice(index, 1, item)
+    },
+
+    // 添加子级备注
+    addSubOthers (subIndex, subItem, oList, index) {
+      if (subItem.others) {
+        let flag = false
+
+        for (let i=0;i<subItem.others.length;i++) {
+          if (subItem.others[i] === oList[0]) {
+            flag = true
+            break
+          }
+        }
+
+        if (flag) {
+          console.log('有重复的')
+        } else {
+          subItem.others = subItem.others.concat(oList)
+        }
+
+      } else {
+        subItem.others = oList
+      }
+      this.menuList[index].contain.splice(subIndex, 1, subItem)
+    },
+
+    // 获取下一页的备注信息
+    handleElseNext () {
+      /**
+       * 当点击下一页备注信息按钮时，先判断当前是否有菜品选中
+       * 如果没有选中任何菜品，则清空 othersList
+       * 如果有选中，需要再判断数据源里面有没有备注信息
+       * 如果没有备注信息，不做任何操作，如果有备注信息
+       * 则获取下一页的备注信息列表，如果列表为空，则显示第一页
+       * 如果不为空，则 othersPageNum += 1
+       */
+      let index = this.nowMenuIndex
+      if (index != -1) {
+        let id = this.menuList[index].id
+        if (this.orderListSource[id-1].others) {
+          let list = this.orderListSource[id-1].others
+          let nextPageNum = this.othersPageNum + 1
+          let startIndex = nextPageNum * this.othersPageSize - this.othersPageSize
+          let endIndex = nextPageNum * this.othersPageSize
+          let nextList = list.slice(startIndex, endIndex)
+          if (nextList.length === 0) {
+            this.othersPageNum = 1
+            this.othersList = list.slice(0, 4)
+          } else {
+            this.othersPageNum += 1
+            this.othersList = nextList
+          }
+        }
+      } else {
+        this.othersList = []
+      }
+    },
+
+    handleOrderNext () {
+      console.log('next...')
+    },
+
+    handleTopbarNext () {
+      console.log('topbar next')
+      let list = this.topbarListSource
+      let nextPageNum = this.topbarPageNum + 1
+      let startIndex = nextPageNum * this.topbarPageSize - this.topbarPageSize
+      let endIndex = nextPageNum * this.topbarPageSize
+      let nextList = list.slice(startIndex, endIndex)
+      if (nextList.length === 0) {
+        this.topbarPageNum = 1
+        this.topbarList = list.slice(0, 5)
+      } else {
+        this.topbarPageNum += 1
+        nextList.unshift(list[0])
+        this.topbarList = nextList
+      }
     }
+
+
+
+
+
+
   }
 }
 </script>
@@ -421,33 +670,66 @@ export default {
     border: 1px solid $border-color-lighter;
     border-bottom: none;
     overflow-y: scroll;
-    ul {
-      padding-bottom: 50px;
+    .main {
       li {
         border-bottom: 1px solid #f5f5f5;
-        .info{
+        .info {
           display: flex;
-          justify-content: space-between;
           align-items: center;
           padding: 8px 5px;
           color: #666666;
-          span:nth-child(1) {
+          padding-left: 20px;
+          padding-right: 10px;
+          position: relative;
+          span.desc {
+            position: absolute;
+            left: 5px;
+          }
+          span.name {
             width: 160px;
+            margin-right: 10px;
+            // color: #000000;
+            font-weight: bold;
+          }
+          span.num {
+            width: 40px;
+            text-align: right;
+            margin-right: 10px;
+          }
+          span.price {
+            width: 68px;
+            text-align: right;
+          }
+        }
+        .sub {
+          li {
+            border-bottom: none;
+            .info span.name{
+              color: #868686;
+              font-weight: normal;
+            }
+          }
+          li.subActive {
+            background-color: #f0f0f0;
           }
         }
         .others {
-          color: #cfcfcf;
+          color: #cccccc;
+          font-size: 14px;
           padding: 5px;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          span:nth-child(1) {
+            padding-left: 15px;
+          }
           span:nth-child(2) {
             padding: 0 15px;
           }
         }
       }
       li.active {
-        background-color: #f5f5f5;
+        background-color: #f8f8f8;
       }
     }
   }
@@ -479,14 +761,13 @@ export default {
     height: 60px;
     margin-bottom: 10px;
     position: relative;
-    .data {
-      display: flex;
+    .table.table-data {
       position: absolute;
       li {
-        margin-right: 7px;
+        // background-color: yellow;
         a {
-          height: 60px;
-          width: 96px;
+          width: 100%;
+          height: 100%;
           font-size: 18px;
           color: #315886;
           display: flex;
@@ -504,8 +785,8 @@ export default {
       display: flex;
       li {
         height: 60px;
-        width: 96px;
-        margin-right: 7px;
+        width: 98px;
+        margin-right: 5px;
         font-size: 18px;
         color: #315886;
         background-color: #cee6ee;
@@ -514,32 +795,33 @@ export default {
         align-items: center;
         text-align: center;
       }
-      li:nth-child(6) {
+      li.next {
         margin-right: 0;
+      }
+      li.next:active {
+        background-color: #bbd9e3;
       }
     }
   }
   .index-option-con {
     position: relative;
-    .con {
-      display: flex;
-      flex-wrap: wrap;
+    .table-data {
       position: absolute;
-      width: 100%;
-      height: 100%;
       .option-item {
-        width: 20%;
-        height: 100px;
         display: flex;
         flex-direction: column;
         .item-price {
           flex: 1;
+          width: 100%;
           color: #9e9e9e;
-          text-align: right;
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
           padding-right: 5px;
         }
         .item-name {
           flex: 2;
+          width: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
@@ -547,6 +829,7 @@ export default {
         }
         .item-real-price {
           flex: 1;
+          width: 100%;
           color: #ed7e38;
           font-size: 14px;
           padding-left: 5px;
@@ -555,57 +838,73 @@ export default {
           align-items: center;
         }
       }
+      .option-item:active {
+        background-color: #eeeeee;
+      }
     }
-    table {
-      border-collapse: collapse;
+    .table {
+      display: flex;
+      flex-wrap: wrap;
+      border-left: 1px solid $border-color-lighter;
+      border-top: 1px solid $border-color-lighter;
       width: 100%;
-      tr td {
+      > div {
         background-color: #f5f5f5;
-        border: 1px solid $border-color-lighter;
+        border-right: 1px solid $border-color-lighter;
+        border-bottom: 1px solid $border-color-lighter;
         width: 20%;
         height: 100px;
         box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
-      td.next {
-        text-align: center;
+      div.next {
         font-size: 30px;
-        color: #666666;
+        z-index: 999;
+      }
+      div.next:active {
+        background-color: #eeeeee;
       }
     }
   }
   .index-option-else {
     position: relative;
     margin-bottom: 10px;
-    .con {
+    .table {
       display: flex;
-      flex-wrap: wrap;
-      position: absolute;
+      border-left: 1px solid $border-color-lighter;
       width: 100%;
-      height: 100%;
-      .else-item {
-        box-sizing: border-box;
+      div {
+        border-right: 1px solid $border-color-lighter;
+        border-bottom: 1px solid $border-color-lighter;
         width: 20%;
-        color: #fff;
         height: 60px;
+        box-sizing: border-box;
+        color: #fff;
+        background-color: #ffb03b;
         display: flex;
         justify-content: center;
         align-items: center;
       }
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      tr td {
-        background-color: #f5f5f5;
-        border: 1px solid $border-color-lighter;
-        width: 20%;
-        height: 60px;
-        box-sizing: border-box;
-        background-color: #ffb03b;
-        color: #fff;
+      div.next {
+        font-size: 20px;
       }
-      td.else-right {
-        text-align: center;
+      div.next:active {
+        background-color: #eca133;
+      }
+    }
+    .table-data {
+      // new
+      position: absolute;
+      width: 80%;
+      div {
+        // new
+        background-color: none;
+        width: 25%;
+      }
+      div:active {
+        background-color: #eca133;
       }
     }
   }

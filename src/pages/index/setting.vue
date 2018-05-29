@@ -1,66 +1,81 @@
 <template>
   <div>
     <h1>设置</h1>
-
-    <div class="ccc">
-      <div class="box">
-        <div class="cell" v-for="item in 8">
-          {{ item }}
+    <div class="con">
+      <div class="box-bg">
+        <div class="cell" v-for="item in list" @click="handleClick(item)">
+          {{ item.num }}
         </div>
+        <div class="cell" @click="handleNext">下一页</div>
       </div>
-      <table>
-        <tr>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td></td>
-          <td></td>
-          <td>翻页</td>
-        </tr>
-      </table>
     </div>
+    <button @click="handleAdd">add button</button>
   </div>
 </template>
 
 <script>
 export default {
+  data () {
+    return {
+      list: [1,1,1,1]
+    }
+  },
+  watch: {
+    list (val) {
+      if (val.length < 9) {
+        let n = 9 - val.length
+        for (let i=0;i<n;i++) {
+          val.push(i)
+        }
+      }
+    }
+  },
+  methods: {
+    handleClick (item) {
+      if (item.num) {
+        console.log(item.num)
+      }
+    },
+    handleNext () {
+      console.log(222)
+      this.list
+    },
+    handleAdd () {
+      let arr = [{num: 991},{num: 992},{num: 993},{num: 994},{num: 995},{num: 996},{num: 997}]
+      this.list = arr
+    },
+    touchStart () {
+      console.log(111)
+    },
+    touchMove () {
+      console.log(222)
+    },
+    touchEnd () {
+      console.log(333)
+    }
+  }
 }
 </script>
 
 <style lang="scss" scoped>
-.ccc {
-  background-color: #f5f5f5;
+.con {
   position: relative;
-  .box {
-    // border: 1px solid blue;
-    // box-sizing: border-box;
-    width: 541px;
-    height: 241px;
-    display: flex;
-    flex-wrap: wrap;
-    position: absolute;
-    .cell {
-      height: 80px;
-      width: 180px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-  }
+  width: 500px;
+  height: 500px;
+  border-left: 1px solid #9c9c9c;
+  border-top: 1px solid #9c9c9c;
 }
-table {
-  border-collapse: collapse;
-  tr td {
-    border: 1px solid red;
+.box-bg {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  z-index: 1;
+  .cell {
+    width: 100px;
     height: 80px;
-    width: 180px;
+    background-color: #ffb526;
+    border-right: 1px solid #9c9c9c;
+    border-bottom: 1px solid #9c9c9c;
     box-sizing: border-box;
   }
 }
