@@ -1,5 +1,6 @@
 <template>
   <div style="display:flex;">
+
     <!-- 菜单列表区域 -->
     <div class="index-order">
       <div class="index-order-top">
@@ -127,7 +128,7 @@
         </table>
         <table class="handle-keyboard2">
           <tr>
-            <td rowspan="2">数量</td>
+            <td rowspan="2" @click="handleUpdateDishCount">数量</td>
             <td>台卡号</td>
             <td>优惠</td>
           </tr>
@@ -144,7 +145,7 @@
         <table class="handle-keyboard3">
           <tr>
             <td>现金</td>
-            <td>移动<br>支付</td>
+            <td @click="handleGetSpareGold">移动<br>支付</td>
           </tr>
           <tr>
             <td>团购券</td>
@@ -319,18 +320,19 @@ export default {
       this.nowSubMenuIndex = -1
       let newDish = JSON.parse(JSON.stringify(dish))
       // 获取输入框里的值（菜品数量）
+      // dishCount 也可以设置为从服务器获取数据（即放在data中）
       let dishCount
       // 过滤输入框的值
       if (this.inputNum === '') {
         dishCount = 1
       } else {
         if (Number(this.inputNum) === 0) {
-          console.log('菜品数量不能为0')
+          this.$toast('数量不能为0')
           this.inputNum = ''
           return
         }
         if (this.inputNum.indexOf('.') != -1) {
-          console.log('含有小数点')
+          this.$toast('不能包含小数点')
           this.inputNum = ''
           return
         }
@@ -339,7 +341,7 @@ export default {
 
       if (this.menuList.length === 0) { // menuList 为空时直接加菜
         if (dishCount > 999) {
-          console.log('单个菜品总数量不能超过999')
+          this.$toast('总数量不能超过999')
           this.inputNum = ''
           return
         }
@@ -358,7 +360,7 @@ export default {
         }
         if (flag) { // 包含的话，找到这个菜 num +1
           if (this.menuList[j].num + dishCount > 999) {
-            console.log('单个菜品总数量不能超过999')
+            this.$toast('总数量不能超过999')
             this.inputNum = ''
             return
           }
@@ -368,7 +370,7 @@ export default {
           this.nowMenuIndex = j
         } else { // 不包含的话，直接添加新菜
           if (dishCount > 999) {
-            console.log('单个菜品总数量不能超过999')
+            this.$toast('总数量不能超过999')
             this.inputNum = ''
             return
           }
@@ -382,6 +384,37 @@ export default {
       // 清空输入框
       this.inputNum = ''
     },
+
+    // 修改菜品数量
+    handleUpdateDishCount () {
+      let dishCount
+      if (this.inputNum != '') {
+        // 过滤输入框的值
+        if (Number(this.inputNum) === 0) {
+          this.$toast('数量不能为0')
+          this.inputNum = ''
+          return
+        }
+        if (this.inputNum.indexOf('.') != -1) {
+          this.$toast('不能包含小数点')
+          this.inputNum = ''
+          return
+        }
+        dishCount = Number(this.inputNum)
+
+        // 获取当前选中菜品的id
+        let index = this.nowMenuIndex
+        let id = this.menuList[index].id
+
+        this.menuList.forEach(item => {
+          if (id === item.id) {
+            item.num = dishCount
+          }
+        })
+        this.inputNum = ''
+      }
+    },
+
     handleSelectMenu (item, index) {
       if (item.contain) {
         if (this.nowMenuIndex === index) {
@@ -469,7 +502,7 @@ export default {
             let subItem = item.contain[subIndex]
             this.addSubOthers(subIndex, subItem, oList, index)
           } else {
-            console.log('不能直接给套餐添加备注')
+            this.$toast('不能直接给套餐添加备注')
           }
         } else {
           // 给父选项添加备注
@@ -493,7 +526,7 @@ export default {
         }
 
         if (flag) {
-          console.log('有重复的')
+          this.$toast('重复了！')
         } else {
           item.others = item.others.concat(oList)
         }
@@ -517,7 +550,7 @@ export default {
         }
 
         if (flag) {
-          console.log('有重复的')
+          this.$toast('重复了！')
         } else {
           subItem.others = subItem.others.concat(oList)
         }
@@ -560,12 +593,13 @@ export default {
       }
     },
 
+    // 获取下一页的菜品信息
     handleOrderNext () {
-      console.log('next...')
+      this.$toast('：）', 1500)
     },
 
+    // 获取下一页的菜品分类信息
     handleTopbarNext () {
-      console.log('topbar next')
       let list = this.topbarListSource
       let nextPageNum = this.topbarPageNum + 1
       let startIndex = nextPageNum * this.topbarPageSize - this.topbarPageSize
@@ -579,8 +613,12 @@ export default {
         nextList.unshift(list[0])
         this.topbarList = nextList
       }
-    }
+    },
 
+    // 开班领备用金
+    handleGetSpareGold () {
+      console.log('get spare gold')
+    }
 
 
 
@@ -649,7 +687,7 @@ export default {
       height: 100%;
       width: 100%;
       font-size: 20px;
-      padding: 0 10px;
+      padding: 0 40px 0 10px;
       box-sizing: border-box;
     }
     .inputClear {
