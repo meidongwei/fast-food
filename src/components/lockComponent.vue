@@ -72,23 +72,12 @@ export default {
       flex-direction: column;
       align-items: center;
       .form-group {
-        margin-bottom: 20px;
         label {
           font-size: 20px;
-          color: #656565;
         }
         .form-control {
-          height: 50px;
           width: 320px;
-          box-sizing: border-box;
           font-size: 20px;
-          padding: 0 10px;
-          background-color: #fff;
-          border: 0px;
-          border: none;
-          border-bottom: 1px solid $border-color-lighter;
-          -webkit-appearance: none;
-          -webkit-border-radius: 0px;
         }
       }
     }

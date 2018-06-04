@@ -18,7 +18,7 @@
         <div class="index-con-item">
           <ul>
             <li v-for="item in sidebarList2" :keys="item.id">
-              <a href="javascript:;">
+              <a href="javascript:;" @click="goto2(item)">
                 <img :src="item.url">
               </a>
             </li>
@@ -30,13 +30,25 @@
       </div>
     </div>
     <router-view/>
+    <LockScreen :isShow="isShowLockScreen"
+      @close="handleCloseLockScreen"></LockScreen>
+    <SpareGoldDialog :isShow="isShowSpareGoldDialog"
+      @close="handleCloseSpareGoldDialog"></SpareGoldDialog>
   </div>
 </template>
 
 <script>
+import LockScreen from '@/components/dialog/lockScreen'
+import SpareGoldDialog from '@/components/dialog/spareGoldDialog'
 export default {
+  components: {
+    LockScreen,
+    SpareGoldDialog
+  },
   data () {
     return {
+      isShowSpareGoldDialog: true,
+      isShowLockScreen: false,
       nowTime: '',
       isSelect: 'order',
       sidebarList1: [
@@ -117,6 +129,24 @@ export default {
     goto (val) {
       this.$router.push({name: val.name})
       this.isSelect = val.name
+    },
+
+    // 锁屏、退出
+    goto2 (item) {
+      if (item.id === 2) {
+        this.$router.push({name: 'login'})
+      } else {
+        this.isShowLockScreen = true
+      }
+    },
+
+    handleCloseLockScreen () {
+      this.isShowLockScreen = false
+    },
+
+    handleCloseSpareGoldDialog (val) {
+      this.isShowSpareGoldDialog = false
+      console.log(val)
     },
 
     // 实时显示时间

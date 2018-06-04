@@ -20,6 +20,12 @@ export default {
     -ms-user-select: none;
     user-select: none;
   }
+  body {
+    // 由于项目放在“壳”中后，开机动画（图片）会有滚动条，所以
+    // 添加 overflow 隐藏掉
+    // 不过 body 元素失去了回弹效果，比较生硬
+    overflow: hidden;
+  }
   a {
     text-decoration: none;
     color: #787878;
@@ -62,6 +68,10 @@ export default {
     color: $primary-color;
     background-color: #fff;
   }
+  .btn-primary-circle:active {
+    color: #fff;
+    background-color: $primary-color;
+  }
 
   // 更改 input placeholder 颜色
   input::-webkit-input-placeholder{
@@ -81,5 +91,49 @@ export default {
   .container {
     width: 1024px;
     height: 768px;
+  }
+
+  // 表单样式
+  .form-group {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    label {
+      font-size: 18px;
+      color: #656565;
+    }
+    label.flag {
+      position: relative;
+    }
+    label.flag::after {
+      content: '*';
+      color: red;
+      position: absolute;
+      left: -15px;
+      top: 3px;
+    }
+    .form-control {
+      height: 50px;
+      width: 230px;
+      box-sizing: border-box;
+      font-size: 16px;
+      padding: 0 10px;
+      background-color: #fff;
+      border: 0px;
+      border: none;
+      border-bottom: 1px solid $border-color-lighter;
+      -webkit-appearance: none;
+      -webkit-border-radius: 0px;
+    }
+  }
+  .btn-box {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    width: 100%;
+    a {
+      display: block;
+      width: 290px;
+    }
   }
 </style>

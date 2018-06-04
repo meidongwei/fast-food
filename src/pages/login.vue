@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="start" v-if="isShowStart">
+    <div class="start-bg" v-if="isShowStart">
       <img src="../assets/start.png">
     </div>
     <div class="container" v-if="!isShowStart">
@@ -13,19 +13,22 @@
         <img src="../assets/logo.png">
         <p>餐行健·品智餐饮管理系统</p>
       </div>
-      <div class="login-box">
-        <p>当前门店：亚运村店</p>
-        <input type="text" class="input input-user"
-          placeholder="请输入您的工号" v-model="usernum">
-        <input type="password" class="input input-pwd"
-          placeholder="请输入密码" v-model="password">
-        <button class="btn"
-          :class="[{'btn-primary': isLogin}, {'btn-allowed': !isLogin}]"
-          :disabled="!isLogin" @click="login">登录</button>
-        <div class="setting">
-          <a href="javascript:;" class="link"
-            @click="handleShowFtpDialog">服务器设置</a>
-          <a href="javascript:;" class="link">修改密码</a>
+      <div class="login-segment">
+        <div class="login-box">
+          <p>当前门店：亚运村店</p>
+          <input type="text" class="input input-user"
+            placeholder="请输入您的工号" v-model="usernum">
+          <input type="password" class="input input-pwd"
+            placeholder="请输入密码" v-model="password">
+          <button class="btn"
+            :class="[{'btn-primary': isLogin}, {'btn-allowed': !isLogin}]"
+            :disabled="!isLogin" @click="login">登录</button>
+          <div class="setting">
+            <a href="javascript:;" class="link"
+              @click="handleShowPermissionDialog">服务器设置</a>
+            <a href="javascript:;" class="link"
+              @click="handleShowPwdDialog">修改密码</a>
+          </div>
         </div>
       </div>
       <div class="login-footer">
@@ -39,17 +42,26 @@
       </div>
     </div>
     <QuiteDialog :isShow="isShowQuiteDialog" @close="handleCloseQuiteDialog"></QuiteDialog>
-    <FtpDialog :isShow="isShowFtpDialog" @close="handleCloseFtpDialog"></FtpDialog>
+    <FtpDialog :isShow="isShowFtpDialog" @close="handleCloseFtpDialog"
+      @submit="handleCloseFtpDialog"></FtpDialog>
+    <PwdDialog :isShow="isShowPwdDialog" @close="handleClosePwdDialog"></PwdDialog>
+    <PermissionDialog :isShow="isShowPermissionDialog"
+      @close="handleClosePermissionDialog"
+      @checkedPermission="checkedPermission"></PermissionDialog>
   </div>
 </template>
 
 <script>
 import QuiteDialog from '@/components/dialog/quiteDialog'
 import FtpDialog from '@/components/dialog/ftpDialog'
+import PwdDialog from '@/components/dialog/pwdDialog'
+import PermissionDialog from '@/components/dialog/permissionDialog'
 export default {
   components: {
     QuiteDialog,
-    FtpDialog
+    FtpDialog,
+    PwdDialog,
+    PermissionDialog
   },
   data () {
     return {
@@ -58,7 +70,9 @@ export default {
       password: '',
       isLogin: false,
       isShowQuiteDialog: false,
-      isShowFtpDialog: false
+      isShowFtpDialog: false,
+      isShowPwdDialog: false,
+      isShowPermissionDialog: false
     }
   },
   mounted () {
@@ -100,6 +114,31 @@ export default {
     },
     handleCloseFtpDialog () {
       this.isShowFtpDialog = false
+    },
+    handleShowPwdDialog () {
+      this.isShowPwdDialog = true
+    },
+    handleClosePwdDialog () {
+      this.isShowPwdDialog = false
+    },
+    handleShowPermissionDialog () {
+      // 首次使用服务器设置或云端IP发生变化时，不需要授权、验证权限
+      // 非首次使用服务器设置，需要验证权限
+
+      // 假设 flag 为服务器端传来的值，0为首次，1为非首次
+      let flag = 1
+      if (flag === 0) {
+        this.isShowFtpDialog = true
+      } else {
+        this.isShowPermissionDialog = true
+      }
+    },
+    handleClosePermissionDialog () {
+      this.isShowPermissionDialog = false
+    },
+    checkedPermission () {
+      this.isShowPermissionDialog = false
+      this.isShowFtpDialog = true
     }
   }
 }
@@ -108,9 +147,6 @@ export default {
 <style lang="scss" scoped>
   .container {
     background: url('../assets/1.png') no-repeat;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
     .login-close {
       width: 100%;
       text-align: right;
@@ -119,7 +155,7 @@ export default {
     }
     .login-title {
       color: #fff;
-      margin-bottom: 50px;
+      margin-bottom: 30px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -130,62 +166,66 @@ export default {
         font-size: 30px;
       }
     }
-    .login-box {
-      box-sizing: border-box;
-      width: 550px;
-      height: 400px;
-      background-color: #f5f5f5;
-      border-radius: 3px;
-      box-shadow: 1px 1px 5px #bdbdbd;
-      padding: 30px 70px;
+    .login-segment {
       margin-bottom: 50px;
-      p {
-        color: #8f8f8f;
-        margin-top: 15px;
-        margin-bottom: 20px;
-        font-size: 18px;
-      }
-      .input {
+      display: flex;
+      justify-content: center;
+      .login-box {
         box-sizing: border-box;
-        display: block;
-        width: 100%;
-        height: 58px;
-        margin-bottom: 20px;
-        border: none;
-        border: 1px solid #eeeeee;
+        width: 550px;
+        height: 400px;
+        background-color: #f5f5f5;
         border-radius: 3px;
-        font-size: 20px;
-        padding-left: 65px;
-        padding-right: 10px;
-      }
-      .input-user {
-        background: #fff url('../assets/3.png') no-repeat 20px;
-      }
-      .input-pwd {
-        background: #fff url('../assets/4.png') no-repeat 20px;
-      }
-      .btn {
-        width: 100%;
-        font-size: 20px;
-        margin-bottom: 20px;
-        border-radius: 3px;
-      }
-      .btn-allowed {
-        background-color: #d9d9d9;
-        color: #fff;
-        cursor: not-allowed;
-      }
-      .setting {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        .link {
+        box-shadow: 1px 1px 5px #bdbdbd;
+        padding: 30px 70px;
+        p {
+          color: #8f8f8f;
+          margin-top: 15px;
+          margin-bottom: 20px;
+          font-size: 18px;
+        }
+        .input {
+          box-sizing: border-box;
+          display: block;
+          width: 100%;
+          height: 58px;
+          margin-bottom: 20px;
+          border: none;
+          border: 1px solid #eeeeee;
+          border-radius: 3px;
           font-size: 20px;
+          padding-left: 65px;
+          padding-right: 10px;
+        }
+        .input-user {
+          background: #fff url('../assets/3.png') no-repeat 20px;
+        }
+        .input-pwd {
+          background: #fff url('../assets/4.png') no-repeat 20px;
+        }
+        .btn {
+          width: 100%;
+          font-size: 20px;
+          margin-bottom: 20px;
+          border-radius: 3px;
+        }
+        .btn-allowed {
+          background-color: #d9d9d9;
+          color: #fff;
+          cursor: not-allowed;
+        }
+        .setting {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          .link {
+            font-size: 20px;
+          }
         }
       }
     }
     .login-footer {
-      height: 100%;
+      height: 100px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -206,6 +246,15 @@ export default {
           width: 100%;
         }
       }
+    }
+  }
+  .start-bg {
+    width: 1024px;
+    height: 768px;
+    box-sizing: border-box;
+    img {
+      width: 100%;
+      height: 100%;
     }
   }
 </style>

@@ -65,45 +65,5 @@ export default {
 }
 </script>
 
-<style lang="scss">
-  .form-group {
-    margin-bottom: 20px;
-    label {
-      font-size: 16px;
-      color: #656565;
-    }
-    label.flag {
-      position: relative;
-    }
-    label.flag::after {
-      content: '*';
-      color: red;
-      position: absolute;
-      left: -15px;
-      top: 3px;
-    }
-    .form-control {
-      height: 50px;
-      width: 230px;
-      box-sizing: border-box;
-      font-size: 16px;
-      padding: 0 10px;
-      background-color: #fff;
-      border: 0px;
-      border: none;
-      border-bottom: 1px solid $border-color-lighter;
-      -webkit-appearance: none;
-      -webkit-border-radius: 0px;
-    }
-  }
-  .btn-box {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 10px;
-    width: 100%;
-    a {
-      display: block;
-      width: 290px;
-    }
-  }
+<style lang="scss" scoped>
 </style>

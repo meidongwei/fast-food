@@ -1,6 +1,6 @@
 <template>
   <table>
-    <tr v-for="tr in numList">
+    <tr v-for="tr in list">
       <td v-for="td in tr" :keys="td.id"
         @click="handleInputNum(td.value)">
         {{ td.value }}
@@ -11,31 +11,37 @@
 
 <script>
 export default {
-  data () {
-    return {
-      numList: [
-        [
-          { id: 1, value: '7' },
-          { id: 2, value: '8' },
-          { id: 3, value: '9' },
-        ],
-        [
-          { id: 4, value: '4' },
-          { id: 5, value: '5' },
-          { id: 6, value: '6' },
-        ],
-        [
-          { id: 7, value: '1' },
-          { id: 8, value: '2' },
-          { id: 9, value: '3' },
-        ],
-        [
-          { id: 10, value: '0' },
-          { id: 11, value: '00' },
-          { id: 12, value: 'x' },
+  props: {
+    list: {
+      type: Array,
+      default () {
+        return [
+          [
+            { id: 1, value: '7' },
+            { id: 2, value: '8' },
+            { id: 3, value: '9' },
+          ],
+          [
+            { id: 4, value: '4' },
+            { id: 5, value: '5' },
+            { id: 6, value: '6' },
+          ],
+          [
+            { id: 7, value: '1' },
+            { id: 8, value: '2' },
+            { id: 9, value: '3' },
+          ],
+          [
+            { id: 10, value: '0' },
+            { id: 11, value: '00' },
+            { id: 12, value: 'x' },
+          ]
         ]
-      ]
+      }
     }
+  },
+  data () {
+    return {}
   },
   methods: {
     handleInputNum (val) {

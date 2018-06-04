@@ -1,30 +1,32 @@
 <template>
   <DialogWrapper :isShow="isShow" :isBig="isBig" title="云端服务器设置">
     <template slot="content">
-      <div class="control">
-        <div>云端IP：</div>
-        <input type="text">
+      <div class="form-group">
+        <label for="input1">云端IP：</label>
+        <input id="input1" type="text" class="form-control">
       </div>
-      <div class="control">
-        <div>云端端口：</div>
-        <input type="text">
+      <div class="form-group">
+        <label for="input2">云端端口：</label>
+        <input id="input2" type="text" class="form-control">
       </div>
-      <div class="control">
-        <div>网关IP：</div>
-        <input type="text">
+      <div class="form-group">
+        <label for="input3">网关IP：</label>
+        <input id="input3" type="text" class="form-control">
       </div>
-      <div class="control">
-        <div>网关端口：</div>
-        <input type="text">
+      <div class="form-group">
+        <label for="input4">网关端口：</label>
+        <input id="input4" type="text" class="form-control">
       </div>
-      <div class="control">
-        <button class="btn btn-primary-circle">测试链接</button>
+      <div class="btn-box">
+        <a href="javascript:;" class="btn btn-primary-circle"
+          @click="testLink">测试链接</a>
       </div>
     </template>
     <template slot="footer">
       <a href="javascript:;" class="btn btn-default"
         @click="close">取消</a>
-      <a href="javascript:;" class="btn btn-primary">确定</a>
+      <a href="javascript:;" class="btn btn-primary"
+        @click="submit">确定</a>
     </template>
   </DialogWrapper>
 </template>
@@ -49,34 +51,32 @@ export default {
   methods: {
     close () {
       this.$emit('close')
+    },
+    submit () {
+      console.log('保存云端服务器IP、端口设置')
+      this.$emit('submit')
+    },
+    testLink () {
+      setTimeout(() => {
+        this.$toast('连接成功！')
+      }, 2000)
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-  .control {
-    display: flex;
+  .form-group {
     margin-bottom: 15px;
-    div {
-      font-size: 18px;
+    label {
       width: 110px;
-      display: flex;
-      align-items: center;
-    }
-    input {
-      border: none;
-      width: 240px;
-      border-bottom: 1px solid #eeeeee;
-      padding: 8px;
-      font-size: 20px;
-    }
-    .btn {
-      width: 120px;
     }
   }
-  .control:nth-child(5) {
+  .btn-box {
     margin-bottom: 0;
+    a {
+      width: 80px;
+    }
   }
   .btn {
     width: 50%;

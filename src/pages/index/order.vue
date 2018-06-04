@@ -5,23 +5,29 @@
     <div class="index-order">
       <div class="index-order-top">
         <div class="left" @click="changeType">
-          <span v-if="!showType">外带</span>
-          <span v-if="showType">堂食</span>
+          <span v-if="!showType">堂食</span>
+          <span v-if="showType">外带</span>
           <span class="tran"></span>
         </div>
         <div class="right" @click="changeMode">
           <span v-if="!showMode">点</span>
-          <span v-if="showMode">退</span>
+          <span v-if="showMode" :class="{tui: showMode}">退</span>
         </div>
       </div>
       <div class="index-order-input">
         <input type="text" placeholder="数量/台卡号/现金/订单号"
           v-model="inputNum">
         <div class="inputClear" v-if="inputNum != ''"
-          @click="handleClearInput">x</div>
+          @click="handleClearInput">X</div>
       </div>
-      <div class="index-order-con">
-        <ul class="main">
+      <div class="index-order-con" ref="viewRef">
+        <div class="index-order-desknum"
+          v-if="isShowDeskNum" ref="deskNumRef">
+          <div>台卡号：{{ deskNum }}</div>
+          <div class="desknum-clear"
+            @click="handleDeleteDeskNum">X</div>
+        </div>
+        <ul class="main" ref="contentRef">
           <li v-for="(item, index) in menuList" :keys="item.id"
             @click="handleSelectMenu(item, index)"
             :class="{'active': index === nowMenuIndex}">
@@ -29,8 +35,8 @@
               <span class="desc" v-if="item.contain && showSub">-</span>
               <span class="desc" v-if="item.contain && !showSub">+</span>
               <span class="name">{{ item.name }}</span>
-              <span class="num">{{ item.num }}</span>
-              <span class="price">{{ item.price*item.num }}.00</span>
+              <span class="num">{{ item.count }}</span>
+              <span class="price">{{ item.price*item.count }}.00</span>
             </div>
             <ul class="sub" v-if="item.contain && showSub">
               <li v-for="(subItem, subIndex) in item.contain" :keys="subItem.id"
@@ -57,15 +63,31 @@
                 @click.stop="handleClearOthers">X</span>
             </div>
           </li>
+          <li class="divider" v-if="menuList.length != 0">-- 我是有底线的 --</li>
         </ul>
+        <div :style="{height: kongHeight + 'px'}"></div>
       </div>
-      <div class="index-order-total">
-        <span>消费合计：</span>
-        <span>0.00</span>
+      <div class="index-order-total"
+        v-if="isShowTotal" ref="totalRef">
+        <div class="cell">
+          <span>消费合计：</span>
+          <span>{{ totalPrice }}.00</span>
+        </div>
+        <div class="cell">
+          <span>特价优惠：</span>
+          <span>{{ totalPrice }}.00</span>
+        </div>
+        <div class="cell">
+          <span>赠送优惠：</span>
+          <span>{{ totalPrice }}.00</span>
+        </div>
       </div>
       <div class="index-order-else">
-        <span>现金退款：</span>
-        <span>0.00</span>
+        <div class="left">
+          <span>尚欠金额：</span>
+          <span>0.00</span>
+        </div>
+        <a href="javascript:;" @click="handleScroll">向下</a>
       </div>
     </div>
 
@@ -129,23 +151,23 @@
         <table class="handle-keyboard2">
           <tr>
             <td rowspan="2" @click="handleUpdateDishCount">数量</td>
-            <td>台卡号</td>
+            <td @click="handleAddDeskNum">台卡号</td>
             <td>优惠</td>
           </tr>
           <tr>
-            <td>挂单</td>
-            <td>取单</td>
+            <td @click="handleGuadan">挂单</td>
+            <td @click="handleQudan">取单</td>
           </tr>
           <tr>
             <td @click="handleDeleteDish">删除</td>
             <td>反结</td>
-            <td>开钱箱</td>
+            <td @click="handleOpenMoneyBox">开钱箱</td>
           </tr>
         </table>
         <table class="handle-keyboard3">
           <tr>
             <td>现金</td>
-            <td @click="handleGetSpareGold">移动<br>支付</td>
+            <td>移动<br>支付</td>
           </tr>
           <tr>
             <td>团购券</td>
@@ -160,14 +182,42 @@
         </table>
       </div>
     </div>
+
+    <MoneyBox :isShow="isShowMoneyBox"
+      @toBigMoney="toBigMoney"
+      @openBigMoneyBox="openBigMoneyBox"></MoneyBox>
+    <BigMoneyDialog :isShow="isShowBigMoneyDialog"
+      @close="handleCloseBigMoney"
+      @getBigMoney="handleGetBigMoney"></BigMoneyDialog>
+    <QudanDialog :isShow="isShowQudanDialog"
+      @close="handleCloseQudan" @deleteItemOfQudan="deleteItemOfQudan"
+      @selectItemOfQudan="selectItemOfQudan"
+      :listSource="qudanList"></QudanDialog>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
+import MoneyBox from '@/components/dialog/moneyBox'
+import BigMoneyDialog from '@/components/dialog/bigMoneyDialog'
+import QudanDialog from '@/components/dialog/qudanDialog'
 export default {
+  components: {
+    MoneyBox,
+    BigMoneyDialog,
+    QudanDialog
+  },
   data () {
     return {
+      kongHeight: 0,
+      isShowTotal: false,
+      deskNum: '',
+      isShowDeskNum: false,
+      qudanId: 1,
+      qudanList: [],
+      isShowQudanDialog: false,
+      isShowBigMoneyDialog: false,
+      isShowMoneyBox: false,
       othersPageNum: 1,
       othersPageSize: 4,
       othersList: [],
@@ -246,6 +296,14 @@ export default {
     }
   },
   computed: {
+    totalPrice () {
+      let total = 0
+      this.menuList.forEach(item => {
+        let price = item.count * item.price
+        total += price
+      })
+      return total
+    }
   },
   watch: {
     /**
@@ -265,6 +323,34 @@ export default {
         }
       } else {
         this.othersList = []
+      }
+    },
+
+    // 监听 qudanList 如果为空则关闭取单窗口
+    qudanList (list) {
+      if (list.length === 0) {
+        this.isShowQudanDialog = false
+      }
+    },
+
+    /**
+     * 消费合计模块显示的时候，获取其高度，赋值给 kongHeight
+     * kongHeight：填充内容区域的空白，对比 handleScroll 方法理解
+     */
+    isShowTotal (isShow) {
+      if (isShow) {
+        this.$nextTick(() => {
+          this.kongHeight = this.$refs.totalRef.clientHeight
+        })
+      }
+    },
+
+    // 如果 menuList 有数据，则显示消费合计模块
+    menuList (menuList) {
+      if (menuList.length != 0) {
+        this.isShowTotal = true
+      } else {
+        this.isShowTotal = false
       }
     }
   },
@@ -346,7 +432,7 @@ export default {
           return
         }
 
-        newDish.num = dishCount
+        newDish.count = dishCount
         this.menuList.push(newDish)
         this.nowMenuIndex = 0
       } else { // menuList 不为空，判断里面时候包含当前 dish
@@ -359,12 +445,12 @@ export default {
           }
         }
         if (flag) { // 包含的话，找到这个菜 num +1
-          if (this.menuList[j].num + dishCount > 999) {
+          if (this.menuList[j].count + dishCount > 999) {
             this.$toast('总数量不能超过999')
             this.inputNum = ''
             return
           }
-          this.menuList[j].num += dishCount
+          this.menuList[j].count += dishCount
           let item = this.menuList[j]
           this.menuList.splice(j, 1, item)
           this.nowMenuIndex = j
@@ -375,7 +461,7 @@ export default {
             return
           }
 
-          newDish.num = dishCount
+          newDish.count = dishCount
           this.menuList.push(newDish)
           this.nowMenuIndex = this.menuList.length - 1
         }
@@ -404,11 +490,14 @@ export default {
 
         // 获取当前选中菜品的id
         let index = this.nowMenuIndex
+        if (index === -1) {
+          return
+        }
         let id = this.menuList[index].id
 
         this.menuList.forEach(item => {
           if (id === item.id) {
-            item.num = dishCount
+            item.count = dishCount
           }
         })
         this.inputNum = ''
@@ -615,12 +704,154 @@ export default {
       }
     },
 
-    // 开班领备用金
-    handleGetSpareGold () {
-      console.log('get spare gold')
-    }
+    // 开钱箱
+    handleOpenMoneyBox () {
+      this.isShowMoneyBox = true
+    },
 
+    // 到取大钞页
+    toBigMoney () {
+      this.isShowMoneyBox = false
+      this.isShowBigMoneyDialog = true
+    },
 
+    // 开钱箱
+    openBigMoneyBox () {
+      this.isShowMoneyBox = false
+    },
+
+    // 关闭取大钞窗口
+    handleCloseBigMoney () {
+      this.isShowBigMoneyDialog = false
+    },
+
+    // 取大钞
+    handleGetBigMoney (val) {
+      this.isShowBigMoneyDialog = false
+      console.log('取大钞：' + val)
+    },
+
+    // 取单
+    handleQudan () {
+      let list = JSON.parse(localStorage.getItem('list'))
+      if (!list || list.length === 0) {
+        this.$toast('还没有挂单！')
+        return
+      }
+      if (list.length === 1) {
+        this.menuList = list[0].data
+      } else {
+        this.isShowQudanDialog = true
+        this.qudanList = list
+      }
+    },
+
+    // 关闭取单
+    handleCloseQudan () {
+      this.isShowQudanDialog = false
+    },
+
+    // 挂单
+    handleGuadan () {
+      if (this.menuList.length === 0) {
+        return
+      }
+
+      let t = new Date()
+      let h = t.getHours()
+      let m = t.getMinutes()
+      let s = t.getSeconds()
+      let date = h + ':' + m + ':' + s
+      let deskNum = 102
+
+      let menulist = {
+        id: this.qudanId,
+        deskNum: deskNum,
+        date: date,
+        data: this.menuList
+      }
+      this.qudanList.push(menulist)
+
+      localStorage.setItem('list', JSON.stringify(this.qudanList))
+      this.menuList = []
+      this.qudanId += 1
+    },
+
+    // 删除取单列表里的某一项
+    deleteItemOfQudan (id) {
+      let list = this.qudanList
+      for (let i=0;i<list.length;i++) {
+        if (list[i].id === id) {
+          list.splice(i, 1)
+        }
+      }
+      localStorage.setItem('list', JSON.stringify(this.qudanList))
+    },
+
+    // 取一个单
+    selectItemOfQudan (item) {
+      this.isShowQudanDialog = false
+      this.menuList = item.data
+      let list = this.qudanList
+      for (let i=0;i<list.length;i++) {
+        if (list[i].id === item.id) {
+          list.splice(i, 1)
+        }
+      }
+      localStorage.setItem('list', JSON.stringify(this.qudanList))
+    },
+
+    // 添加台卡号
+    handleAddDeskNum () {
+      if (this.inputNum === '') {
+        return
+      }
+      if (this.inputNum.indexOf('.') != -1) {
+        this.$toast('不能包含小数点')
+        this.inputNum = ''
+        return
+      }
+      if (this.inputNum.length > 4) {
+        this.inputNum = ''
+        this.$toast('请输入4位以内的台卡号！')
+        return
+      }
+      this.deskNum = this.inputNum
+      this.isShowDeskNum = true
+      this.inputNum = ''
+    },
+
+    // 删除台卡号
+    handleDeleteDeskNum () {
+      this.isShowDeskNum = false
+    },
+
+    // 向下滚动一段距离
+    handleScroll () {
+      // 获取 dom 对象
+      let content  = this.$refs.contentRef
+      let deskNum = this.$refs.deskNumRef
+      let view = this.$refs.viewRef
+
+      // 获取可视区域的高度
+      let viewHeight = view.clientHeight
+
+      // 计算内容区域的高度
+      let contentHeight
+      if (deskNum) {
+        contentHeight = content.clientHeight + deskNum.clientHeight + this.kongHeight
+      } else {
+        contentHeight = content.clientHeight + this.kongHeight
+      }
+
+      if (viewHeight + view.scrollTop < contentHeight) {
+        view.scrollBy(0, 50)
+      } else {
+        view.scrollTo(0, 0)
+      }
+    },
+
+    //
 
 
 
@@ -634,6 +865,7 @@ export default {
   height: 748px;
   margin-right: 10px;
   margin-top: 10px;
+  position: relative;
   .index-order-top {
     height: 60px;
     border: 1px solid $border-color-lighter;
@@ -643,7 +875,6 @@ export default {
     justify-content: space-between;
     align-items: center;
     div {
-      // border: 1px solid red;
       height: 100%;
       display: flex;
       justify-content: center;
@@ -675,6 +906,10 @@ export default {
         align-items: center;
         font-size: 18px;
       }
+      span.tui {
+        color: #F45358;
+        border: 2px solid #F45358;
+      }
     }
   }
   .index-order-input {
@@ -704,10 +939,30 @@ export default {
     }
   }
   .index-order-con {
-    height: 514px;
+    height: 563px;
     border: 1px solid $border-color-lighter;
     border-bottom: none;
     overflow-y: scroll;
+    .index-order-desknum {
+      border-bottom: 1px solid $border-color-lighter;
+      background-color: #f8f8f8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-left: 10px;
+      height: 40px;
+      box-sizing: border-box;
+      .desknum-clear {
+        color: #DBDBDB;
+        font-size: 16px;
+        box-sizing: border-box;
+        padding: 0 15px;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    }
     .main {
       li {
         border-bottom: 1px solid #f5f5f5;
@@ -769,16 +1024,29 @@ export default {
       li.active {
         background-color: #f8f8f8;
       }
+      li.divider {
+        text-align: center;
+        font-size: 12px;
+        color: #dfdfdf;
+      }
     }
   }
   .index-order-total {
-    height: 50px;
     border: 1px solid $border-color-lighter;
     border-bottom: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px;
+    box-sizing: border-box;
+    padding: 5px 0;
+    position: absolute;
+    bottom: 62px;
+    width: 100%;
+    background-color: #fff;
+    .cell {
+      height: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+    }
   }
   .index-order-else {
     height: 60px;
@@ -786,8 +1054,30 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 10px;
     color: #fff;
+    .left {
+      height: 100%;
+      box-sizing: border-box;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+    }
+    a {
+      border-left: 1px solid #25957C;
+      background-color: $primary-color;
+      height: 100%;
+      width: 100px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
+    a:active {
+      background-color: #25957C;
+    }
   }
 }
 .index-option {
@@ -899,7 +1189,7 @@ export default {
       }
       div.next {
         font-size: 30px;
-        z-index: 999;
+        z-index: 1;
       }
       div.next:active {
         background-color: #eeeeee;

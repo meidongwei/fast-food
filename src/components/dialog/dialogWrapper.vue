@@ -1,9 +1,11 @@
 <template>
   <div class="dialog-con" v-if="isShow">
     <div class="dialog-bg"></div>
-    <div class="dialog-box" :class="{bigBox: isBig}">
+    <div class="dialog-box" :class="[{bigBox: isBig}, {superBox: isSuperBig}]">
       <div class="dialog-header">
         <h3>{{ title }}</h3>
+        <a href="javascript:;" class="delete"
+          v-if="isShowX" @click="close">X</a>
       </div>
       <div class="dialog-content">
         <slot name="content"></slot>
@@ -22,11 +24,19 @@ export default {
       type: Boolean,
       default: false
     },
+    isShowX: {
+      type: Boolean,
+      default: false
+    },
     title: {
       type: String,
       default: ''
     },
     isBig: {
+      type: Boolean,
+      default: false
+    },
+    isSuperBig: {
       type: Boolean,
       default: false
     }
@@ -49,6 +59,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 2;
     .dialog-bg {
       background-color: rgba(0, 0, 0, .8);
       position: fixed;
@@ -61,23 +72,38 @@ export default {
     .dialog-box.bigBox {
       width: 700px;
     }
+    .dialog-box.superBox {
+      width: 860px;
+    }
     .dialog-box {
       width: 400px;
       background-color: #fff;
       z-index: 2;
       .dialog-header {
-        padding: 10px 15px;
+        height: 50px;
         border-bottom: 1px solid #eeeeee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         h3 {
           font-weight: normal;
+          padding-left: 15px;
+        }
+        .delete {
+          font-size: 20px;
+          padding: 0 20px;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
       }
       .dialog-content {
-        max-height: 400px;
+        // max-height: 400px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 50px 20px;
+        padding: 40px 20px;
       }
       .dialog-footer {
         display: flex;
