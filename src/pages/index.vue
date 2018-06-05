@@ -32,8 +32,9 @@
     <router-view/>
     <LockScreen :isShow="isShowLockScreen"
       @close="handleCloseLockScreen"></LockScreen>
-    <SpareGoldDialog :isShow="isShowSpareGoldDialog"
-      @close="handleCloseSpareGoldDialog"></SpareGoldDialog>
+      <!-- 备用金窗口 -->
+    <!-- <SpareGoldDialog :isShow="isShowSpareGoldDialog"
+      @close="handleCloseSpareGoldDialog"></SpareGoldDialog> -->
   </div>
 </template>
 

@@ -30,18 +30,19 @@
         <ul class="main" ref="contentRef">
           <li v-for="(item, index) in menuList" :keys="item.id"
             @click="handleSelectMenu(item, index)"
-            :class="{'active': index === nowMenuIndex}">
+            :class="{'active': item.id === nowMenuId}">
             <div class="info">
-              <span class="desc" v-if="item.contain && showSub">-</span>
-              <span class="desc" v-if="item.contain && !showSub">+</span>
+              <span class="desc" v-if="item.contain && item.id === nowMenuId">-</span>
+              <span class="desc" v-if="item.contain && item.id != nowMenuId">+</span>
               <span class="name">{{ item.name }}</span>
               <span class="num">{{ item.count }}</span>
               <span class="price">{{ item.price*item.count }}.00</span>
             </div>
-            <ul class="sub" v-if="item.contain && showSub">
+            <!-- 子菜单及备注 -->
+            <ul class="sub" v-if="item.contain && item.id === nowMenuId">
               <li v-for="(subItem, subIndex) in item.contain" :keys="subItem.id"
-                @click.stop="handleSelectSubMenu(subIndex, index)"
-                :class="{'subActive': subIndex === nowSubMenuIndex}">
+                @click.stop="handleSelectSubMenu(subItem.id, item.id, subIndex, index)"
+                :class="{'subActive': subItem.id === nowSubMenuId}">
                 <div class="info">
                   <span class="name">{{ subItem.name }}</span>
                   <span class="num">{{ subItem.count }}</span>
@@ -50,20 +51,23 @@
                   <span>
                     备注：{{ subItem.others | prettifyList }}
                   </span>
-                  <span v-if="subIndex === nowSubMenuIndex"
+                  <span v-if="subItem.id === nowSubMenuId"
                     @click.stop="handleClearSubOthers">X</span>
                 </div>
               </li>
             </ul>
+            <!-- 主菜单及备注 -->
             <div class="others" v-if="item.others">
               <span>
                 备注：{{ item.others | prettifyList }}
               </span>
-              <span v-if="index === nowMenuIndex"
+              <span v-if="item.id === nowMenuId"
                 @click.stop="handleClearOthers">X</span>
             </div>
           </li>
-          <li class="divider" v-if="menuList.length != 0">-- 我是有底线的 --</li>
+          <li class="divider" v-if="menuList.length != 0">
+            -- 我是有底线的 --
+          </li>
         </ul>
         <div :style="{height: kongHeight + 'px'}"></div>
       </div>
@@ -95,9 +99,9 @@
     <div class="index-option">
       <div class="index-option-topbar">
         <ul class="table table-data">
-          <li v-for="item in topbarList"
+          <li v-for="item in topbarList" :keys="item.id"
             @click="handleSelectTopbar(item.id)"
-            :class="{'active': nowTopbarIndex === item.id}">
+            :class="{'active': nowTopbarId === item.id}">
             <a href="javascript:;">{{ item.name }}</a>
           </li>
         </ul>
@@ -109,13 +113,25 @@
       <div class="index-option-con">
         <div class="table table-data">
           <div class="option-item" v-for="item in orderList"
-            :keys="item.id" @click="handleAddDish(item)">
+            :keys="item.id" @click="handleAddDish(item)"
+            :class="[{bgColor1: item.type === 2}, {bgColor2: item.type === 3},
+            {bgColor3: item.type === 4}, {bgColor4: item.type === 5},
+            {bgColor5: item.type === 6}, {bgColor6: item.type === 6001},
+            {bgColor7: item.type === 6002}]">
             <div class="item-price">
               {{ item.price }}.00
             </div>
             <div class="item-name">{{ item.name }}</div>
-            <div class="item-real-price">
-              特价：{{ item.nowPrice }}.00
+            <div class="item-footer">
+              <div class="item-real-price" v-if="item.vip === 2">
+                特价：{{ item.nowPrice }}.00
+              </div>
+              <div class="item-real-price" v-if="item.vip === 1">
+                vip：{{ item.nowPrice }}.00
+              </div>
+              <div class="item-sheng" v-if="item.count">
+                剩：{{ item.count }}
+              </div>
             </div>
           </div>
         </div>
@@ -209,6 +225,8 @@ export default {
   },
   data () {
     return {
+      // 点菜的菜品数量
+      dishCount: 1,
       kongHeight: 0,
       isShowTotal: false,
       deskNum: '',
@@ -218,23 +236,35 @@ export default {
       isShowQudanDialog: false,
       isShowBigMoneyDialog: false,
       isShowMoneyBox: false,
-      othersPageNum: 1,
-      othersPageSize: 4,
-      othersList: [],
-      showSub: true,
+
       showType: false,
       showMode: false,
       inputNum: '',
+
+      listSource: [],
+
+      othersPageNum: 1,
+      othersPageSize: 4,
+      othersList: [],
+
+      nowMenuId: -1,
       nowMenuIndex: -1,
+      nowSubMenuId: -1,
       nowSubMenuIndex: -1,
-      nowTopbarIndex: 1,
+
+      nowTopbarId: 1,
       menuList: [],
+
+      orderPageNum: 1,
+      orderPageSize: 19,
       orderList: [],
       orderListSource: [],
+
       topbarPageNum: 1,
       topbarPageSize: 5,
       topbarList: [],
       topbarListSource: [],
+
       keyboard1List: [
         [
           {
@@ -307,20 +337,23 @@ export default {
   },
   watch: {
     /**
+     * 显示菜品备注信息
      * 监听当前是否有菜品选中，如果没有选中，则清空 othersList
      * 如果有选中，需要再判断数据源里面有没有备注信息
      * 如果没有备注信息，则清空 othersList
      * 如果有备注信息，则截取前4项赋值给 othersList
      */
-    nowMenuIndex (index) {
-      if (index != -1) {
-        let id = this.menuList[index].id
-        if (this.orderListSource[id-1].others) {
-          let list = this.orderListSource[id-1].others
-          this.othersList = list.slice(0, 4)
-        } else {
-          this.othersList = []
-        }
+    nowMenuId (id) {
+      if (id != -1) {
+        this.orderListSource.forEach(item => {
+          if (id === item.id) {
+            if (item.others) {
+              this.othersList = item.others.slice(0, 4)
+            } else {
+              this.othersList = []
+            }
+          }
+        })
       } else {
         this.othersList = []
       }
@@ -355,7 +388,7 @@ export default {
     }
   },
   created () {
-    this.getDatas()
+    this.getOrderList()
   },
   filters: {
     prettifyList (list) {
@@ -363,18 +396,51 @@ export default {
     }
   },
   methods: {
-    getDatas () {
-      this.getOrderList()
-      this.getTopbarList()
-    },
+
+    // 获取菜品数据
     getOrderList () {
       axios.get('http://localhost:8080/getOrderList')
         .then(res => {
-          this.orderListSource = res.data.data
           if (res.data.errcode === 0) {
-            let list = JSON.parse(JSON.stringify(res.data.data))
-            // 删除所有备注信息
+            // 获取一级分类
+            this.listSource = res.data.data
+            let list = JSON.parse(JSON.stringify(this.listSource))
             list.forEach(item => {
+              delete item.contain
+              this.topbarListSource.push(item)
+            })
+            this.topbarList = this.topbarListSource.slice(0, 5)
+
+            // 获取“全部”菜品 this.orderListSource
+            // type：1 全部，type：2 套餐，type：3 普通一级类
+            let listTemp = []
+            this.listSource.forEach(item => {
+              // 套餐 + 普通一级类
+              if (item.type != 1) {
+                // 套餐
+                if (item.type === 2) {
+                  item.contain.forEach(subItem => {
+                    listTemp.push(subItem)
+                  })
+                } else if (item.type === 3) { // 普通一级类
+                  item.contain.forEach(subItem => {
+                    // 包含二级类
+                    if (subItem.contain) {
+                      subItem.contain.forEach(subItem2 => {
+                        listTemp.push(subItem2)
+                      })
+                    } else { // 普通一级类
+                      listTemp.push(subItem)
+                    }
+                  })
+                }
+              }
+            })
+            this.orderListSource = listTemp
+
+            // 删除所有备注信息
+            let orderList = JSON.parse(JSON.stringify(this.orderListSource))
+            orderList.forEach(item => {
               delete item.others
               if (item.contain) {
                 item.contain.forEach(subItem => {
@@ -382,36 +448,26 @@ export default {
                 })
               }
             })
-            this.orderList = list
+
+            // 赋值给 this.orderList
+            this.orderList = orderList.slice(0, 20)
+
           } else {
             console.log(res.data.errmsg)
           }
+
         })
         .catch(err => console.log(err))
     },
-    getTopbarList () {
-      axios.get('http://localhost:8080/getTopbarList')
-        .then(res => {
-          if (res.data.errcode === 0) {
-             this.topbarListSource = res.data.data
-             this.topbarList = this.topbarListSource.slice(0, 5)
-          } else {
-            console.log(res.data.errmsg)
-          }
-        })
-        .catch(err => console.log(err))
-    },
+
+    // 点击菜品，添加一个菜
     handleAddDish (dish) {
       // 点击时清除子选项的状态
-      this.nowSubMenuIndex = -1
+      this.nowSubMenuId = -1
       let newDish = JSON.parse(JSON.stringify(dish))
       // 获取输入框里的值（菜品数量）
-      // dishCount 也可以设置为从服务器获取数据（即放在data中）
-      let dishCount
       // 过滤输入框的值
-      if (this.inputNum === '') {
-        dishCount = 1
-      } else {
+      if (this.inputNum != '') {
         if (Number(this.inputNum) === 0) {
           this.$toast('数量不能为0')
           this.inputNum = ''
@@ -422,18 +478,23 @@ export default {
           this.inputNum = ''
           return
         }
-        dishCount = Number(this.inputNum)
+        this.dishCount = Number(this.inputNum)
+      } else {
+        this.dishCount = 1
       }
 
-      if (this.menuList.length === 0) { // menuList 为空时直接加菜
-        if (dishCount > 999) {
+      // menuList 为空时直接加菜
+      if (this.menuList.length === 0) {
+        if (this.dishCount > 999) {
           this.$toast('总数量不能超过999')
           this.inputNum = ''
           return
         }
 
-        newDish.count = dishCount
+        newDish.count = this.dishCount
         this.menuList.push(newDish)
+        // 一级菜单默认选中，并且点套餐时，默认打开套餐内容
+        this.nowMenuId = newDish.id
         this.nowMenuIndex = 0
       } else { // menuList 不为空，判断里面时候包含当前 dish
         let flag = false
@@ -444,25 +505,31 @@ export default {
             j = i
           }
         }
-        if (flag) { // 包含的话，找到这个菜 num +1
-          if (this.menuList[j].count + dishCount > 999) {
+
+        // 包含的话，找到这个菜 count +1
+        if (flag) {
+          if (this.menuList[j].count + this.dishCount > 999) {
             this.$toast('总数量不能超过999')
             this.inputNum = ''
             return
           }
-          this.menuList[j].count += dishCount
+          this.menuList[j].count += this.dishCount
           let item = this.menuList[j]
           this.menuList.splice(j, 1, item)
+          // 一级菜单默认选中，并且点套餐时，默认打开套餐内容
+          this.nowMenuId = newDish.id
           this.nowMenuIndex = j
         } else { // 不包含的话，直接添加新菜
-          if (dishCount > 999) {
+          if (this.dishCount > 999) {
             this.$toast('总数量不能超过999')
             this.inputNum = ''
             return
           }
 
-          newDish.count = dishCount
+          newDish.count = this.dishCount
           this.menuList.push(newDish)
+          // 一级菜单默认选中，并且点套餐时，默认打开套餐内容
+          this.nowMenuId = newDish.id
           this.nowMenuIndex = this.menuList.length - 1
         }
       }
@@ -473,7 +540,6 @@ export default {
 
     // 修改菜品数量
     handleUpdateDishCount () {
-      let dishCount
       if (this.inputNum != '') {
         // 过滤输入框的值
         if (Number(this.inputNum) === 0) {
@@ -486,51 +552,56 @@ export default {
           this.inputNum = ''
           return
         }
-        dishCount = Number(this.inputNum)
+        this.dishCount = Number(this.inputNum)
 
-        // 获取当前选中菜品的id
-        let index = this.nowMenuIndex
-        if (index === -1) {
+        // 修改数量的时候菜品必须被选中
+        if (this.nowMenuId === -1) {
+          this.$toast('未选中菜品！')
           return
         }
-        let id = this.menuList[index].id
 
         this.menuList.forEach(item => {
-          if (id === item.id) {
-            item.count = dishCount
+          if (this.nowMenuId === item.id) {
+            item.count = this.dishCount
           }
         })
         this.inputNum = ''
       }
     },
 
+    // 点击左侧一级菜单
     handleSelectMenu (item, index) {
-      if (item.contain) {
-        if (this.nowMenuIndex === index) {
+      // 点击之前，一级菜单已经选中
+      if (this.nowMenuId === item.id) {
+        if (item.contain) {
+          this.nowMenuId = -1
           this.nowMenuIndex = -1
-          this.showSub = false
-          this.nowSubMenuIndex = -1
+          this.nowSubMenuId = -1
         } else {
-          this.nowMenuIndex = index
-          this.showSub = true
-        }
-      } else {
-        if (this.nowMenuIndex === index) {
+          this.nowMenuId = -1
           this.nowMenuIndex = -1
-        } else {
-          this.nowMenuIndex = index
-          this.nowSubMenuIndex = -1
         }
+      } else { // 点击之前，一级菜单未被选中
+        this.nowMenuId = item.id
+        this.nowMenuIndex = index
+        this.nowSubMenuId = -1
       }
     },
-    handleSelectSubMenu (subIndex, index) {
+
+    // 点击左侧二级菜单
+    handleSelectSubMenu (subId, id, subIndex, index) {
+      this.nowMenuId = id
       this.nowMenuIndex = index
-      if (this.nowSubMenuIndex === subIndex) {
+      if (this.nowSubMenuId === subId) {
+        this.nowSubMenuId = -1
         this.nowSubMenuIndex = -1
       } else {
+        this.nowSubMenuId = subId
         this.nowSubMenuIndex = subIndex
       }
     },
+
+    // 点击小键盘1触发的方法
     handleInputNum (td) {
       if (td.id === 12) {
         this.inputNum = this.inputNum.substring(0, this.inputNum.length-1)
@@ -538,15 +609,60 @@ export default {
         this.inputNum = this.inputNum + td.name
       }
     },
+
+    // 切换菜品类别
     handleSelectTopbar (id) {
-      this.nowTopbarIndex = id
+      /**
+       * 每次切换的时候，需要重置菜品信息页码为1
+       * bug 回顾：“全部”状态下，点击下一页（orderPageNum 这时为2了）
+       * 再点击其他一级菜品分类（有分页的），再点击此分类的下一页（无效）
+       */
+      this.orderPageNum = 1
+      this.nowTopbarId = id
+      // 点击“全部”按钮
+      if (id === 1) {
+        let orderList = JSON.parse(JSON.stringify(this.orderListSource))
+        // 删除所有备注信息
+        orderList.forEach(item => {
+          delete item.others
+          if (item.contain) {
+            item.contain.forEach(subItem => {
+              delete subItem.others
+            })
+          }
+        })
+        this.orderList = orderList.slice(0, 20)
+      } else { // 点击的非“全部”按钮
+        this.listSource.forEach(item => {
+          if (id === item.id) {
+            let list = item.contain
+            let newList = []
+            for (let i=0;i<list.length;i++) {
+              // 普通菜品
+              if (list[i].price) {
+                newList.push(list[i])
+              } else { // 还有分类
+                newList.push(...list[i].contain)
+              }
+            }
+            this.orderList = newList.slice(0, 20)
+            // this.orderList = item.contain.slice(0, 20)
+          }
+        })
+      }
     },
+
+    // 切换堂食/外带
     changeType () {
       this.showType = !this.showType
     },
+
+    // 切换点菜/退菜模式
     changeMode () {
       this.showMode = !this.showMode
     },
+
+    // 删除菜品
     handleDeleteDish () {
       if (this.nowMenuIndex != -1) {
         // 从 menuList 中删除菜品
@@ -555,15 +671,21 @@ export default {
         this.nowMenuIndex = -1
       }
     },
+
+    // 清空输入框
     handleClearInput () {
       this.inputNum = ''
     },
+
+    // 删除一级菜单备注
     handleClearOthers () {
       let index = this.nowMenuIndex
       let item = this.menuList[index]
       delete item.others
       this.menuList.splice(index, 1, item)
     },
+
+    // 删除二级菜单备注
     handleClearSubOthers () {
       let index = this.nowMenuIndex
       let item = this.menuList[index]
@@ -662,21 +784,25 @@ export default {
        */
       let index = this.nowMenuIndex
       if (index != -1) {
-        let id = this.menuList[index].id
-        if (this.orderListSource[id-1].others) {
-          let list = this.orderListSource[id-1].others
-          let nextPageNum = this.othersPageNum + 1
-          let startIndex = nextPageNum * this.othersPageSize - this.othersPageSize
-          let endIndex = nextPageNum * this.othersPageSize
-          let nextList = list.slice(startIndex, endIndex)
-          if (nextList.length === 0) {
-            this.othersPageNum = 1
-            this.othersList = list.slice(0, 4)
-          } else {
-            this.othersPageNum += 1
-            this.othersList = nextList
+        let id = this.nowMenuId
+        this.orderListSource.forEach(item => {
+          if (id === item.id) {
+            if (item.others) {
+              let list = item.others
+              let nextPageNum = this.othersPageNum + 1
+              let startIndex = nextPageNum * this.othersPageSize - this.othersPageSize
+              let endIndex = nextPageNum * this.othersPageSize
+              let nextList = list.slice(startIndex, endIndex)
+              if (nextList.length === 0) {
+                this.othersPageNum = 1
+                this.othersList = list.slice(0, 4)
+              } else {
+                this.othersPageNum += 1
+                this.othersList = nextList
+              }
+            }
           }
-        }
+        })
       } else {
         this.othersList = []
       }
@@ -684,7 +810,49 @@ export default {
 
     // 获取下一页的菜品信息
     handleOrderNext () {
-      this.$toast('：）', 1500)
+      let id = this.nowTopbarId
+      // 创建一个 list 变量来存储当前 orderList 的数据
+      let list = []
+      // 当前状态为“全部”时
+      if (id === 1) {
+        let orderList = JSON.parse(JSON.stringify(this.orderListSource))
+        for (let i=0;i<orderList.length;i++) {
+          // 普通菜品
+          if (orderList[i].price) {
+            list.push(orderList[i])
+          } else { // 还有分类
+            list.push(...orderList[i].contain)
+          }
+        }
+      } else { // 当前状态为非“全部”时
+        this.listSource.forEach(item => {
+          if (id === item.id) {
+            let list2 = item.contain
+            let newList = []
+            for (let i=0;i<list2.length;i++) {
+              // 普通菜品
+              if (list2[i].price) {
+                newList.push(list2[i])
+              } else { // 还有分类
+                newList.push(...list2[i].contain)
+              }
+            }
+            list = newList.slice(0, 20)
+          }
+        })
+      }
+
+      let nextPageNum = this.orderPageNum + 1
+      let startIndex = nextPageNum * this.orderPageSize - this.orderPageSize
+      let endIndex = nextPageNum * this.orderPageSize
+      let nextList = list.slice(startIndex, endIndex)
+      if (nextList.length === 0) {
+        this.orderPageNum = 1
+        this.orderList = list.slice(0, 20)
+      } else {
+        this.orderPageNum += 1
+        this.orderList = nextList
+      }
     },
 
     // 获取下一页的菜品分类信息
@@ -823,6 +991,7 @@ export default {
 
     // 删除台卡号
     handleDeleteDeskNum () {
+      this.deskNum = ''
       this.isShowDeskNum = false
     },
 
@@ -1028,6 +1197,8 @@ export default {
         text-align: center;
         font-size: 12px;
         color: #dfdfdf;
+        border-bottom: none;
+        padding: 10px 0;
       }
     }
   }
@@ -1155,19 +1326,42 @@ export default {
           align-items: center;
           text-align: center;
         }
-        .item-real-price {
+        .item-footer {
           flex: 1;
           width: 100%;
           color: #ed7e38;
-          font-size: 14px;
+          font-size: 12px;
+          box-sizing: border-box;
           padding-left: 5px;
+          padding-right: 5px;
           display: flex;
-          justify-content: flex-start;
+          justify-content: space-between;
           align-items: center;
         }
       }
       .option-item:active {
         background-color: #eeeeee;
+      }
+      .bgColor1 {
+        background-color: #dafff7;
+      }
+      .bgColor2 {
+        background-color: #f0ffda;
+      }
+      .bgColor3 {
+        background-color: #ffdaea;
+      }
+      .bgColor4 {
+        background-color: #d0ffe0;
+      }
+      .bgColor5 {
+        background-color: #fff5da;
+      }
+      .bgColor6 {
+        background-color: #ffdada;
+      }
+      .bgColor7 {
+        background-color: #dbdaff;
       }
     }
     .table {
