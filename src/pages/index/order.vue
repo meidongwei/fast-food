@@ -79,17 +79,21 @@
         </div>
         <div class="cell">
           <span>特价优惠：</span>
-          <span>{{ totalPrice }}.00</span>
+          <span>0.00</span>
         </div>
         <div class="cell">
           <span>赠送优惠：</span>
-          <span>{{ totalPrice }}.00</span>
+          <span>0.00</span>
         </div>
       </div>
       <div class="index-order-else">
-        <div class="left">
+        <div class="left" v-if="smallChange === 0">
           <span>尚欠金额：</span>
-          <span>0.00</span>
+          <span>{{ owePrice }}.00</span>
+        </div>
+        <div class="left" v-if="smallChange > 0">
+          <span>找零：</span>
+          <span>{{ smallChange }}.00</span>
         </div>
         <a href="javascript:;" @click="handleScroll">向下</a>
       </div>
@@ -157,10 +161,10 @@
       </div>
       <div class="index-option-handle">
         <table class="handle-keyboard1">
-          <tr v-for="tr in keyboard1List">
+          <tr v-for="tr in keyboardList">
             <td v-for="td in tr" :keys="td.id"
               @click="handleInputNum(td)">
-              {{ td.name }}
+              {{ td.value }}
             </td>
           </tr>
         </table>
@@ -175,14 +179,15 @@
             <td @click="handleQudan">取单</td>
           </tr>
           <tr>
-            <td @click="handleDeleteDish">删除</td>
+            <td @touchstart="clickStart"
+              @touchend="clickEnd">删除</td>
             <td>反结</td>
-            <td @click="handleOpenMoneyBox">开钱箱</td>
+            <td @click="openMoneyBoxDialog">开钱箱</td>
           </tr>
         </table>
         <table class="handle-keyboard3">
           <tr>
-            <td>现金</td>
+            <td @click="handlePay">现金</td>
             <td>移动<br>支付</td>
           </tr>
           <tr>
@@ -190,7 +195,7 @@
             <td>银行卡</td>
           </tr>
           <tr>
-            <td>会员卡</td>
+            <td @click="handleInputMembershipCardNum">会员卡</td>
             <td>
               <div style="transform: rotate(90deg);">&gt;</div>
             </td>
@@ -199,16 +204,47 @@
       </div>
     </div>
 
-    <MoneyBox :isShow="isShowMoneyBox"
-      @toBigMoney="toBigMoney"
-      @openBigMoneyBox="openBigMoneyBox"></MoneyBox>
+    <!-- 钱箱弹框 -->
+    <MoneyBox :isShow="isShowMoneyBoxDialog" @toBigMoney="toBigMoney"
+      @close="handleCloseMoneyBox"
+      @openMoneyBox="openMoneyBox">
+    </MoneyBox>
+
+    <!-- 取大钞弹框 -->
     <BigMoneyDialog :isShow="isShowBigMoneyDialog"
       @close="handleCloseBigMoney"
-      @getBigMoney="handleGetBigMoney"></BigMoneyDialog>
+      @getBigMoney="handleGetBigMoney">
+    </BigMoneyDialog>
+
+    <!-- 取单弹框 -->
     <QudanDialog :isShow="isShowQudanDialog"
       @close="handleCloseQudan" @deleteItemOfQudan="deleteItemOfQudan"
       @selectItemOfQudan="selectItemOfQudan"
-      :listSource="qudanList"></QudanDialog>
+      :listSource="qudanList">
+    </QudanDialog>
+
+    <!-- 有辅菜组的套餐弹框 -->
+    <TaocanDialog :isShow="isShowTaocanDialog"
+      :dish="taocanDish"
+      @close="handleCloseTaocanDialog">
+    </TaocanDialog>
+
+    <!-- 长按确认删除订单吗 -->
+    <GeneralDialog :isShow="isShowDeleteMenuListDialog" title="温馨提示"
+      text="确认删除订单吗？" @close="handleCloseDeleteMenuListDialog"
+      @submit="handleDeleteMenuList">
+    </GeneralDialog>
+
+    <!-- 时段菜谱发生变化 -->
+    <GeneralDialog2 :isShow="isShowShiduanDialog" title="温馨提示"
+      text="时段菜谱发生变化" btnText="我知道了" @close="handleCloseShiduanDialog">
+    </GeneralDialog2>
+
+    <!-- 显示输入会员卡账号窗口 -->
+    <KeyboardDialog :isShow="isShowMemCardNumDialog" title="会员卡"
+      placeholder="请刷卡/输入会员卡号/输入手机号" :keyboardList="keyboardList"
+      @close="handleCloseMemCardNumDialog" @submit="handleGotoMemCard">
+    </KeyboardDialog>
   </div>
 </template>
 
@@ -217,14 +253,33 @@ import axios from 'axios'
 import MoneyBox from '@/components/dialog/moneyBox'
 import BigMoneyDialog from '@/components/dialog/bigMoneyDialog'
 import QudanDialog from '@/components/dialog/qudanDialog'
+import TaocanDialog from '@/components/dialog/taocanDialog'
+import GeneralDialog from '@/components/dialog/generalDialog'
+import GeneralDialog2 from '@/components/dialog/generalDialog2'
+import KeyboardDialog from '@/components/dialog/keyboardDialog'
 export default {
   components: {
-    MoneyBox,
-    BigMoneyDialog,
-    QudanDialog
+    MoneyBox, BigMoneyDialog, QudanDialog, TaocanDialog,
+    GeneralDialog, GeneralDialog2, KeyboardDialog
   },
   data () {
     return {
+      // 是否显示会员卡账号窗口
+      isShowMemCardNumDialog: false,
+      // 支付的部分金额
+      partPrice: 0,
+      // 找零金额
+      smallChange: 0,
+
+      isShowDeleteMenuListDialog: false,
+      // 长按时间戳
+      stampStart: 0,
+      stampEnd: 0,
+
+      // 是否显示时段变化提示
+      isShowShiduanDialog: false,
+      taocanDish: null,
+      isShowTaocanDialog: false,
       // 点菜的菜品数量
       dishCount: 1,
       kongHeight: 0,
@@ -235,7 +290,7 @@ export default {
       qudanList: [],
       isShowQudanDialog: false,
       isShowBigMoneyDialog: false,
-      isShowMoneyBox: false,
+      isShowMoneyBoxDialog: false,
 
       showType: false,
       showMode: false,
@@ -265,67 +320,68 @@ export default {
       topbarList: [],
       topbarListSource: [],
 
-      keyboard1List: [
+      keyboardList: [
         [
           {
             id: 1,
-            name: '7'
+            value: '7'
           },
           {
             id: 2,
-            name: '8'
+            value: '8'
           },
           {
             id: 3,
-            name: '9'
+            value: '9'
           }
         ],
         [
           {
             id: 4,
-            name: '4'
+            value: '4'
           },
           {
             id: 5,
-            name: '5'
+            value: '5'
           },
           {
             id: 6,
-            name: '6'
+            value: '6'
           }
         ],
         [
           {
             id: 7,
-            name: '1'
+            value: '1'
           },
           {
             id: 8,
-            name: '2'
+            value: '2'
           },
           {
             id: 9,
-            name: '3'
+            value: '3'
           }
         ],
         [
           {
             id: 10,
-            name: '0'
+            value: '0'
           },
           {
             id: 11,
-            name: '.'
+            value: '.'
           },
           {
             id: 12,
-            name: '←'
+            value: '←'
           }
         ]
       ]
     }
   },
   computed: {
+    // 总消费金额
     totalPrice () {
       let total = 0
       this.menuList.forEach(item => {
@@ -333,6 +389,11 @@ export default {
         total += price
       })
       return total
+    },
+
+    // 尚欠款=总消费金额-特价-赠送-支付的部分金额
+    owePrice () {
+      return this.totalPrice - 0 - 0 - this.partPrice
     }
   },
   watch: {
@@ -385,7 +446,8 @@ export default {
       } else {
         this.isShowTotal = false
       }
-    }
+    },
+
   },
   created () {
     this.getOrderList()
@@ -464,8 +526,18 @@ export default {
     handleAddDish (dish) {
       // 点击时清除子选项的状态
       this.nowSubMenuId = -1
+      // 重置找零金额为0
+      this.smallChange = 0
+
       let newDish = JSON.parse(JSON.stringify(dish))
-      // 获取输入框里的值（菜品数量）
+
+      // 如果是有辅菜组套餐
+      if (newDish.assist) {
+        this.taocanDish = newDish
+        this.isShowTaocanDialog = true
+        return
+      }
+
       // 过滤输入框的值
       if (this.inputNum != '') {
         if (Number(this.inputNum) === 0) {
@@ -492,6 +564,12 @@ export default {
         }
 
         newDish.count = this.dishCount
+        // 如果添加的是套餐，则里面的明细菜也添加数量
+        if (newDish.contain) {
+          newDish.contain.forEach(item => {
+            item.count = this.dishCount
+          })
+        }
         this.menuList.push(newDish)
         // 一级菜单默认选中，并且点套餐时，默认打开套餐内容
         this.nowMenuId = newDish.id
@@ -515,6 +593,12 @@ export default {
           }
           this.menuList[j].count += this.dishCount
           let item = this.menuList[j]
+          // 如果是套餐，则里面的明细菜也添加数量
+          if (item.contain) {
+            item.contain.forEach(subItem => {
+              subItem.count += this.dishCount
+            })
+          }
           this.menuList.splice(j, 1, item)
           // 一级菜单默认选中，并且点套餐时，默认打开套餐内容
           this.nowMenuId = newDish.id
@@ -554,6 +638,12 @@ export default {
         }
         this.dishCount = Number(this.inputNum)
 
+        if (this.dishCount > 999) {
+          this.$toast('总数量不能超过999')
+          this.inputNum = ''
+          return
+        }
+
         // 修改数量的时候菜品必须被选中
         if (this.nowMenuId === -1) {
           this.$toast('未选中菜品！')
@@ -563,6 +653,12 @@ export default {
         this.menuList.forEach(item => {
           if (this.nowMenuId === item.id) {
             item.count = this.dishCount
+            // 如果是套餐，则明细菜也修改数量
+            if (item.contain) {
+              item.contain.forEach(subItem => {
+                subItem.count = this.dishCount
+              })
+            }
           }
         })
         this.inputNum = ''
@@ -606,7 +702,7 @@ export default {
       if (td.id === 12) {
         this.inputNum = this.inputNum.substring(0, this.inputNum.length-1)
       } else {
-        this.inputNum = this.inputNum + td.name
+        this.inputNum = this.inputNum + td.value
       }
     },
 
@@ -662,13 +758,31 @@ export default {
       this.showMode = !this.showMode
     },
 
-    // 删除菜品
-    handleDeleteDish () {
-      if (this.nowMenuIndex != -1) {
-        // 从 menuList 中删除菜品
-        this.menuList.splice(this.nowMenuIndex, 1)
-        // 设置为当前不选中状态
-        this.nowMenuIndex = -1
+    // 长按删除订单
+    clickStart () {
+      this.stampStart = new Date().getTime()
+      clearInterval(this.Loop)
+      this.Loop = setTimeout(() => {
+        if (this.menuList.length === 0) {
+          this.$toast('没有订单')
+        } else {
+          this.isShowDeleteMenuListDialog = true
+        }
+      }, 1000)
+    },
+
+    // 短按删除菜品
+    clickEnd () {
+      clearInterval(this.Loop)
+      this.stampEnd = new Date().getTime()
+      if (this.stampEnd - this.stampStart < 1000) {
+        if (this.nowMenuIndex != -1) {
+          // 从 menuList 中删除菜品
+          this.menuList.splice(this.nowMenuIndex, 1)
+          // 设置为当前不选中状态
+          this.nowMenuIndex = -1
+          this.nowMenuId = -1
+        }
       }
     },
 
@@ -872,20 +986,26 @@ export default {
       }
     },
 
-    // 开钱箱
-    handleOpenMoneyBox () {
-      this.isShowMoneyBox = true
+    // 点击“开钱箱”按钮，打开钱箱弹窗
+    openMoneyBoxDialog () {
+      this.isShowMoneyBoxDialog = true
+    },
+
+    // 关闭钱箱的弹窗
+    handleCloseMoneyBox () {
+      this.isShowMoneyBoxDialog = false
+    },
+
+    // 打开真正的钱箱
+    openMoneyBox () {
+      this.isShowMoneyBoxDialog = false
+      this.$toast('打开真正的钱箱')
     },
 
     // 到取大钞页
     toBigMoney () {
-      this.isShowMoneyBox = false
+      this.isShowMoneyBoxDialog = false
       this.isShowBigMoneyDialog = true
-    },
-
-    // 开钱箱
-    openBigMoneyBox () {
-      this.isShowMoneyBox = false
     },
 
     // 关闭取大钞窗口
@@ -899,7 +1019,7 @@ export default {
       console.log('取大钞：' + val)
     },
 
-    // 取单
+    // 点击取单按钮
     handleQudan () {
       let list = JSON.parse(localStorage.getItem('list'))
       if (!list || list.length === 0) {
@@ -908,6 +1028,8 @@ export default {
       }
       if (list.length === 1) {
         this.menuList = list[0].data
+        this.qudanList = []
+        localStorage.setItem('list', JSON.stringify(this.qudanList))
       } else {
         this.isShowQudanDialog = true
         this.qudanList = list
@@ -922,6 +1044,7 @@ export default {
     // 挂单
     handleGuadan () {
       if (this.menuList.length === 0) {
+        this.$toast('还没有订单')
         return
       }
 
@@ -930,11 +1053,10 @@ export default {
       let m = t.getMinutes()
       let s = t.getSeconds()
       let date = h + ':' + m + ':' + s
-      let deskNum = 102
 
       let menulist = {
         id: this.qudanId,
-        deskNum: deskNum,
+        deskNum: this.deskNum,
         date: date,
         data: this.menuList
       }
@@ -943,9 +1065,12 @@ export default {
       localStorage.setItem('list', JSON.stringify(this.qudanList))
       this.menuList = []
       this.qudanId += 1
+
+      this.deskNum = ''
+      this.isShowDeskNum = false
     },
 
-    // 删除取单列表里的某一项
+    // 删除取单列表里的一个订单
     deleteItemOfQudan (id) {
       let list = this.qudanList
       for (let i=0;i<list.length;i++) {
@@ -956,7 +1081,7 @@ export default {
       localStorage.setItem('list', JSON.stringify(this.qudanList))
     },
 
-    // 取一个单
+    // 在窗口中取一个订单
     selectItemOfQudan (item) {
       this.isShowQudanDialog = false
       this.menuList = item.data
@@ -1020,9 +1145,77 @@ export default {
       }
     },
 
-    //
+    // 关闭套餐窗口
+    handleCloseTaocanDialog () {
+      this.isShowTaocanDialog = false
+    },
 
+    // 关闭“时段菜谱发生变化”窗口
+    handleCloseShiduanDialog () {
+      this.isShowShiduanDialog = false
+    },
 
+    // 关闭“确认删除订单吗”窗口
+    handleCloseDeleteMenuListDialog () {
+      this.isShowDeleteMenuListDialog = false
+    },
+
+    // 确认删除订单
+    handleDeleteMenuList () {
+      this.menuList = []
+      this.deskNum = ''
+      this.isShowDeskNum = false
+      this.isShowDeleteMenuListDialog = false
+    },
+
+    // 现金支付
+    handlePay () {
+      // 如果账单为空，则 return
+      if (this.menuList.length === 0) {
+        this.$toast('账单为空！')
+        // 重置找零金额为0
+        this.smallChange = 0
+        this.inputNum = ''
+        return
+      }
+      let num = Number(this.inputNum)
+      // 不输入金额或输入的金额刚刚好
+      if (this.inputNum === '' || num === this.owePrice) {
+        this.menuList = [] // totalPrice 为 0
+        this.partPrice = 0 // owePrice 为 0
+        this.deskNum = ''
+        this.isShowDeskNum = false
+        this.inputNum = ''
+        this.isShowMoneyBoxDialog = true
+      } else if (num > this.owePrice) { // 超额支付现金
+        this.smallChange = num - this.owePrice
+        this.menuList = []
+        this.deskNum = ''
+        this.isShowDeskNum = false
+        this.inputNum = ''
+        this.isShowMoneyBoxDialog = true
+      } else { // 支付部分现金
+        this.partPrice += num
+        this.inputNum = ''
+      }
+    },
+
+    // 输入会员卡账号
+    handleInputMembershipCardNum () {
+      this.isShowMemCardNumDialog = true
+    },
+
+    // 关闭会员卡窗口
+    handleCloseMemCardNumDialog () {
+      this.isShowMemCardNumDialog = false
+    },
+
+    // 跳转到会员卡页面
+    handleGotoMemCard () {
+      this.isShowMemCardNumDialog = false
+      // 如果只有一张卡则直接打开，
+      // 如果有多张会员卡则跳转到选择会员卡的页面
+    }
 
   }
 }
@@ -1444,6 +1637,9 @@ export default {
         color: #6a6a6a;
         background-color: #f4f4f4;
       }
+      tr td:active {
+        background-color: #e0e0e0;
+      }
     }
     .handle-keyboard2 {
       height: 100%;
@@ -1456,6 +1652,9 @@ export default {
         font-size: 20px;
         color: #fff;
       }
+      tr td:active {
+        background-color: #5d8a9c;
+      }
     }
     .handle-keyboard3 {
       height: 100%;
@@ -1467,6 +1666,9 @@ export default {
         text-align: center;
         font-size: 20px;
         color: #fff;
+      }
+      tr td:active {
+        background-color: #25957C;
       }
     }
   }

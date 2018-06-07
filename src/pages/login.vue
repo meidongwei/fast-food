@@ -25,8 +25,6 @@
             :disabled="!isLogin" @click="login">登录</button>
           <div class="setting">
             <a href="javascript:;" class="link"
-              @click="handleShowPermissionDialog">服务器设置</a>
-            <a href="javascript:;" class="link"
               @click="handleShowPwdDialog">修改密码</a>
           </div>
         </div>
@@ -41,27 +39,21 @@
         </div>
       </div>
     </div>
-    <QuiteDialog :isShow="isShowQuiteDialog" @close="handleCloseQuiteDialog"></QuiteDialog>
-    <FtpDialog :isShow="isShowFtpDialog" @close="handleCloseFtpDialog"
-      @submit="handleCloseFtpDialog"></FtpDialog>
-    <PwdDialog :isShow="isShowPwdDialog" @close="handleClosePwdDialog"></PwdDialog>
-    <PermissionDialog :isShow="isShowPermissionDialog"
-      @close="handleClosePermissionDialog"
-      @checkedPermission="checkedPermission"></PermissionDialog>
+    <GeneralDialog :isShow="isShowQuiteDialog" @close="handleCloseQuiteDialog"
+      title="温馨提示" text="是否确定要退出系统？">
+    </GeneralDialog>
+    <PwdDialog :isShow="isShowPwdDialog" @close="handleClosePwdDialog">
+    </PwdDialog>
   </div>
 </template>
 
 <script>
-import QuiteDialog from '@/components/dialog/quiteDialog'
-import FtpDialog from '@/components/dialog/ftpDialog'
+import GeneralDialog from '@/components/dialog/generalDialog'
 import PwdDialog from '@/components/dialog/pwdDialog'
-import PermissionDialog from '@/components/dialog/permissionDialog'
 export default {
   components: {
-    QuiteDialog,
-    FtpDialog,
-    PwdDialog,
-    PermissionDialog
+    GeneralDialog,
+    PwdDialog
   },
   data () {
     return {
@@ -70,9 +62,7 @@ export default {
       password: '',
       isLogin: false,
       isShowQuiteDialog: false,
-      isShowFtpDialog: false,
-      isShowPwdDialog: false,
-      isShowPermissionDialog: false
+      isShowPwdDialog: false
     }
   },
   mounted () {
@@ -97,7 +87,7 @@ export default {
   },
   methods: {
     login () {
-      if (this.usernum === 'admin' && this.password === '123') {
+      if (this.usernum === '123' && this.password === '123') {
         this.$router.push({name: 'index'})
       } else {
         alert('用户名或密码错误！')
@@ -112,33 +102,11 @@ export default {
     handleShowFtpDialog () {
       this.isShowFtpDialog = true
     },
-    handleCloseFtpDialog () {
-      this.isShowFtpDialog = false
-    },
     handleShowPwdDialog () {
       this.isShowPwdDialog = true
     },
     handleClosePwdDialog () {
       this.isShowPwdDialog = false
-    },
-    handleShowPermissionDialog () {
-      // 首次使用服务器设置或云端IP发生变化时，不需要授权、验证权限
-      // 非首次使用服务器设置，需要验证权限
-
-      // 假设 flag 为服务器端传来的值，0为首次，1为非首次
-      let flag = 1
-      if (flag === 0) {
-        this.isShowFtpDialog = true
-      } else {
-        this.isShowPermissionDialog = true
-      }
-    },
-    handleClosePermissionDialog () {
-      this.isShowPermissionDialog = false
-    },
-    checkedPermission () {
-      this.isShowPermissionDialog = false
-      this.isShowFtpDialog = true
     }
   }
 }
@@ -216,7 +184,7 @@ export default {
         }
         .setting {
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-end;
           align-items: center;
           .link {
             font-size: 20px;

@@ -4,6 +4,10 @@
 
 <script>
 export default {
+  created () {
+    // 禁止弹出右键窗口
+    // document.oncontextmenu=new Function("event.returnValue=false")
+  }
 }
 </script>
 
@@ -41,19 +45,33 @@ export default {
 
   // 按钮
   .btn {
+    display: inline-block;
     padding: 15px 20px;
     font-size: 16px;
     border: none;
     text-align: center;
     cursor: pointer;
   }
+  .btn-sm {
+    padding: 10px 20px;
+  }
   .btn-default {
+    background-color: #BBBBBB;
+    color: #fff;
+  }
+  .btn-default:active {
+    background-color: #9f9f9f;
+  }
+  .btn-default-lighter {
     background-color: #f5f5f5;
     color: #3d3d3d;
   }
   .btn-default-dark {
     background-color: #797979;
     color: #fff;
+  }
+  .btn-default-dark:active {
+    background-color: #616161;
   }
   .btn-danger {
     background-color: #f56c5e;
@@ -62,6 +80,9 @@ export default {
   .btn-primary {
     background-color: $primary-color;
     color: #fff;
+  }
+  .btn-primary:active {
+    background-color: #25957C;
   }
   .btn-primary-circle {
     border: 1px solid $primary-color;

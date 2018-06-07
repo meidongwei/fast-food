@@ -30,8 +30,8 @@
       </div>
     </div>
     <router-view/>
-    <LockScreen :isShow="isShowLockScreen"
-      @close="handleCloseLockScreen"></LockScreen>
+    <!-- <LockScreen :isShow="isShowLockScreen"
+      @close="handleCloseLockScreen"></LockScreen> -->
       <!-- 备用金窗口 -->
     <!-- <SpareGoldDialog :isShow="isShowSpareGoldDialog"
       @close="handleCloseSpareGoldDialog"></SpareGoldDialog> -->
@@ -39,17 +39,17 @@
 </template>
 
 <script>
-import LockScreen from '@/components/dialog/lockScreen'
+// import LockScreen from '@/components/dialog/lockScreen'
 import SpareGoldDialog from '@/components/dialog/spareGoldDialog'
 export default {
   components: {
-    LockScreen,
+    // LockScreen,
     SpareGoldDialog
   },
   data () {
     return {
       isShowSpareGoldDialog: true,
-      isShowLockScreen: false,
+      // isShowLockScreen: false,
       nowTime: '',
       isSelect: 'order',
       sidebarList1: [
@@ -137,13 +137,13 @@ export default {
       if (item.id === 2) {
         this.$router.push({name: 'login'})
       } else {
-        this.isShowLockScreen = true
+        // this.isShowLockScreen = true
       }
     },
 
-    handleCloseLockScreen () {
-      this.isShowLockScreen = false
-    },
+    // handleCloseLockScreen () {
+    //   this.isShowLockScreen = false
+    // },
 
     handleCloseSpareGoldDialog (val) {
       this.isShowSpareGoldDialog = false

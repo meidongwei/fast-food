@@ -9,7 +9,7 @@
             <div class="num">{{ item.deskNum }}</div>
             <div class="date">{{ item.date }}</div>
             <a href="javascript:;" class="delete"
-              @click="deleteItemOfQudan(item.id)">
+              @click.stop="deleteItemOfQudan(item.id)">
               <img src="../../assets/delete.png">
             </a>
           </div>
@@ -52,7 +52,7 @@ export default {
       default () {
         return []
       }
-    }
+    },
   },
   data () {
     return {
@@ -79,6 +79,10 @@ export default {
   methods: {
     // 关闭取单窗口
     close () {
+      // 关闭窗口后重置为显示第一页
+      this.pageNum = 1
+      this.startIndex = 0
+      this.endIndex = 3
       this.$emit('close')
     },
 

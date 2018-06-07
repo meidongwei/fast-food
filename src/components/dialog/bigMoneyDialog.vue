@@ -64,10 +64,10 @@ export default {
   },
   methods: {
     handleInputNum (val) {
-      if (val === 'x') {
+      if (val.id === 12) {
         this.input1 = this.input1.substring(0, this.input1.length-1)
       } else {
-        this.input1 += val
+        this.input1 += val.value
       }
     },
     close () {

@@ -63,6 +63,7 @@ Mock.mock(/getOrderList/, {
           type: 2,
           name: '饮料套餐',
           'vip|1': [1, 2],
+          assist: 1,
           price: 50,
           nowPrice: 30,
           contain: [

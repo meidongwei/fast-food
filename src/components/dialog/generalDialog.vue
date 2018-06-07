@@ -1,12 +1,13 @@
 <template>
-  <DialogWrapper :isShow="isShow" title="温馨提示">
+  <DialogWrapper :isShow="isShow" :title="title">
     <template slot="content">
-      <p class="text">是否确定要退出系统？</p>
+      <p class="text">{{ text }}</p>
     </template>
     <template slot="footer">
       <a href="javascript:;" class="btn btn-default"
         @click="close">取消</a>
-      <a href="javascript:;" class="btn btn-primary">确定</a>
+      <a href="javascript:;" class="btn btn-primary"
+        @click="submit">确定</a>
     </template>
   </DialogWrapper>
 </template>
@@ -20,11 +21,20 @@ export default {
   props: {
     isShow: {
       type: Boolean
+    },
+    title: {
+      type: String
+    },
+    text: {
+      type: String
     }
   },
   methods: {
     close () {
       this.$emit('close')
+    },
+    submit () {
+      this.$emit('submit')
     }
   }
 }

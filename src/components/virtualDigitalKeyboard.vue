@@ -2,7 +2,7 @@
   <table>
     <tr v-for="tr in list">
       <td v-for="td in tr" :keys="td.id"
-        @click="handleInputNum(td.value)">
+        @click="handleInputNum(td)">
         {{ td.value }}
       </td>
     </tr>
@@ -39,9 +39,6 @@ export default {
         ]
       }
     }
-  },
-  data () {
-    return {}
   },
   methods: {
     handleInputNum (val) {

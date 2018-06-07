@@ -1,5 +1,6 @@
 <template>
-  <DialogWrapper :isShow="isShow" :isBig="isBig" title="开钱箱">
+  <DialogWrapper :isShow="isShow" :isBig="isBig" title="开钱箱"
+    :isShowX="true" @close="close">
     <template slot="content">
       <div class="con">
         <div>
@@ -30,7 +31,7 @@
       <a href="javascript:;" class="btn btn-default"
         @click="toBigMoney">取大钞</a>
       <a href="javascript:;" class="btn btn-primary"
-        @click="openBigMoneyBox">开钱箱</a>
+        @click="openMoneyBox">开钱箱</a>
     </template>
   </DialogWrapper>
 </template>
@@ -58,17 +59,20 @@ export default {
   },
   methods: {
     handleInputNum (val) {
-      if (val === 'x') {
+      if (val.id === 12) {
         this.cardnum = this.cardnum.substring(0, this.cardnum.length-1)
       } else {
-        this.cardnum += val
+        this.cardnum += val.value
       }
     },
     toBigMoney () {
       this.$emit('toBigMoney')
     },
-    openBigMoneyBox () {
-      this.$emit('openBigMoneyBox')
+    openMoneyBox () {
+      this.$emit('openMoneyBox')
+    },
+    close () {
+      this.$emit('close')
     }
   }
 }
