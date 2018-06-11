@@ -68,7 +68,7 @@ export default {
     },
     submit () {
       if (this.inputNum === '123') {
-        this.$emit('close')
+        this.$emit('submit')
         this.inputNum = ''
       } else {
         this.$toast('输入错误！')

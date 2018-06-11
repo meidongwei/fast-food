@@ -1,5 +1,5 @@
 <template>
-  <DialogWrapper :isShow="isShow" :isBig="isBig" title="取大钞">
+  <DialogWrapper :isShow="isShow" :isBig="true" title="取大钞">
     <template slot="content">
       <div class="con">
         <div class="form-group">
@@ -37,7 +37,6 @@ export default {
   data () {
     return {
       input1: '',
-      isBig: true,
       numList: [
         [
           { id: 1, value: '7' },

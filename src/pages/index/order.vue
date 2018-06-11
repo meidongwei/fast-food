@@ -90,15 +90,13 @@
             <span>0</span>
           </div>
           <div class="cell" v-for="(item, index) in payList" :key="index"
-            @click="handleSelectPayitem(index)"
+            @click="handleSelectPayitem(item, index)"
             :class="{payActive: index === nowPayitemIndex}">
             <span>{{ item.name }}</span>
             <span>{{ item.price }}</span>
           </div>
         </div>
       </div>
-
-
 
       <!-- 尚欠金额、翻页区域 -->
       <div class="index-order-else">
@@ -271,6 +269,11 @@
       placeholder="请刷卡/输入会员卡号/输入手机号" :keyboardList="keyboardList"
       @close="handleCloseMemLockDialog" @submit="gotoMemPage">
     </KeyboardDialog>
+
+    <!-- 会员卡列表窗口 -->
+    <MemCardListDialog :isShow="isShowMemCardListDialog"
+      @close="handleCloseMemCardListDialog">
+    </MemCardListDialog>
   </div>
 </template>
 
@@ -283,13 +286,17 @@ import TaocanDialog from '@/components/dialog/taocanDialog'
 import GeneralDialog from '@/components/dialog/generalDialog'
 import GeneralDialog2 from '@/components/dialog/generalDialog2'
 import KeyboardDialog from '@/components/dialog/keyboardDialog'
+import MemCardListDialog from '@/components/dialog/memCardListDialog'
 export default {
   components: {
     MoneyBox, BigMoneyDialog, QudanDialog, TaocanDialog,
-    GeneralDialog, GeneralDialog2, KeyboardDialog
+    GeneralDialog, GeneralDialog2, KeyboardDialog,
+    MemCardListDialog
   },
   data () {
     return {
+      isShowMemCardListDialog: false,
+      tmpPrice: 0,
       nowPayitemIndex: -1,
       // 支付列表（点餐列表下方）
       payList: [],
@@ -815,7 +822,10 @@ export default {
                 this.payList.splice(i, 1)
               }
             }
+            // 删除之后，重置当前选中项状态为-1
             this.nowPayitemIndex = -1
+            // 删除之后，需要更新 partPrice，即更新 owePrice（尚欠金额）
+            this.partPrice -= this.tmpPrice
             // 打开钱箱的操作
           }
           // 菜品被选中，支付款项未被选中
@@ -1098,6 +1108,11 @@ export default {
         return
       }
 
+      if (this.payList.length != 0) {
+        this.$toast('请先撤销支付款项！')
+        return
+      }
+
       let t = new Date()
       let h = t.getHours()
       let m = t.getMinutes()
@@ -1296,18 +1311,28 @@ export default {
     // 跳转到会员卡页面
     gotoMemPage () {
       this.isShowMemCardNumDialog = false
+      this.isShowMemCardListDialog = true
       // 如果只有一张卡则直接打开，
       // 如果有多张会员卡则跳转到选择会员卡的页面
     },
 
+    // 关闭选择会员卡页面
+    handleCloseMemCardListDialog () {
+      this.isShowMemCardListDialog = false
+    },
+
     // 选择支付列表的一项
-    handleSelectPayitem (index) {
+    handleSelectPayitem (item, index) {
       this.nowPayitemIndex = index
       // 取消所有菜品的选中状态
       this.nowMenuIndex = -1
       this.nowMenuId = -1
       this.nowSubMenuIndex = -1
       this.nowSubMenuId = -1
+
+      // 将当前选中项的 price 同步到临时属性 tmpPrice
+      // 解决用户删除选项时，尚欠金额显示不正常的情况
+      this.tmpPrice = item.price
     }
 
   }
