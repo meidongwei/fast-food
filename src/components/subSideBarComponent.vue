@@ -3,7 +3,7 @@
     <SegmentLeftTitle>{{ title }}</SegmentLeftTitle>
     <div class="subBar">
       <ul>
-        <li v-for="item in subBarList" :keys="item.id">
+        <li v-for="item in subBarList" :key="item.id">
           <a href="javascript:;" @click="goto(item)"
             :class="isSelect === item.value ? 'subActive' : ''">
             {{ item.name }}

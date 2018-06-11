@@ -3,7 +3,7 @@
     :isShowX="true" @close="close" title="取单">
     <template slot="content">
       <div class="con">
-        <div class="cell" v-for="item in list" :keys="item.id"
+        <div class="cell" v-for="item in list" :key="item.id"
           @click="selectItemOfQudan(item)">
           <div class="header">
             <div class="num">{{ item.deskNum }}</div>

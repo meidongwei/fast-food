@@ -1,5 +1,7 @@
 <template>
   <div class="container">
+
+    <!-- 侧边栏（导航） -->
     <div class="index-sidebar">
       <div class="index-logo">
         <img src="../assets/logo-white.png">
@@ -7,7 +9,7 @@
       <div class="index-con">
         <div class="index-con-item">
           <ul>
-            <li v-for="item in sidebarList1" :keys="item.id">
+            <li v-for="item in sidebarList1" :key="item.id">
               <a href="javascript:;" @click="goto(item)">
                 <img :src="item.url2" v-if="isSelect === item.name">
                 <img :src="item.url" v-else>
@@ -17,7 +19,7 @@
         </div>
         <div class="index-con-item">
           <ul>
-            <li v-for="item in sidebarList2" :keys="item.id">
+            <li v-for="item in sidebarList2" :key="item.id">
               <a href="javascript:;" @click="goto2(item)">
                 <img :src="item.url">
               </a>
@@ -29,9 +31,11 @@
         {{ nowTime }}
       </div>
     </div>
-    <router-view/>
-    <!-- <LockScreen :isShow="isShowLockScreen"
-      @close="handleCloseLockScreen"></LockScreen> -->
+    <keep-alive>
+      <router-view/>
+    </keep-alive>
+
+
       <!-- 备用金窗口 -->
     <!-- <SpareGoldDialog :isShow="isShowSpareGoldDialog"
       @close="handleCloseSpareGoldDialog"></SpareGoldDialog> -->
@@ -39,17 +43,14 @@
 </template>
 
 <script>
-// import LockScreen from '@/components/dialog/lockScreen'
 import SpareGoldDialog from '@/components/dialog/spareGoldDialog'
 export default {
   components: {
-    // LockScreen,
     SpareGoldDialog
   },
   data () {
     return {
       isShowSpareGoldDialog: true,
-      // isShowLockScreen: false,
       nowTime: '',
       isSelect: 'order',
       sidebarList1: [
@@ -87,10 +88,6 @@ export default {
       sidebarList2: [
         {
           id: 1,
-          url: require('../assets/icon-index/lock-1.png')
-        },
-        {
-          id: 2,
           url: require('../assets/icon-index/quite-1.png')
         }
       ]
@@ -132,19 +129,17 @@ export default {
       this.isSelect = val.name
     },
 
-    // 锁屏、退出
+    // 退出
     goto2 (item) {
-      if (item.id === 2) {
+      if (item.id === 1) {
+        // 清空 localStorage
+        localStorage.clear()
+        // 跳转到登录页面
         this.$router.push({name: 'login'})
-      } else {
-        // this.isShowLockScreen = true
       }
     },
 
-    // handleCloseLockScreen () {
-    //   this.isShowLockScreen = false
-    // },
-
+    // 关闭备用金窗口
     handleCloseSpareGoldDialog (val) {
       this.isShowSpareGoldDialog = false
       console.log(val)

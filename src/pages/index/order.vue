@@ -1,137 +1,157 @@
 <template>
   <div style="display:flex;">
 
-    <!-- 菜单列表区域 -->
+    <!-- 菜单区域 -->
     <div class="index-order">
+
+      <!-- 堂食/外带、点菜/退菜区域 -->
       <div class="index-order-top">
-        <div class="left" @click="changeType">
-          <span v-if="!showType">堂食</span>
-          <span v-if="showType">外带</span>
+        <div class="left" @click="handleChangeTS">
+          <span v-if="!isShowTS">堂食</span>
+          <span v-if="isShowTS">外带</span>
           <span class="tran"></span>
         </div>
-        <div class="right" @click="changeMode">
-          <span v-if="!showMode">点</span>
-          <span v-if="showMode" :class="{tui: showMode}">退</span>
+        <div class="right" @click="handleChangeDishMode">
+          <span v-if="!isShowMode">点</span>
+          <span v-if="isShowMode" :class="{tui: isShowMode}">退</span>
         </div>
       </div>
+
+      <!-- input 区域 -->
       <div class="index-order-input">
         <input type="text" placeholder="数量/台卡号/现金/订单号"
           v-model="inputNum">
         <div class="inputClear" v-if="inputNum != ''"
           @click="handleClearInput">X</div>
       </div>
-      <div class="index-order-con" ref="viewRef">
-        <div class="index-order-desknum"
-          v-if="isShowDeskNum" ref="deskNumRef">
-          <div>台卡号：{{ deskNum }}</div>
-          <div class="desknum-clear"
-            @click="handleDeleteDeskNum">X</div>
+
+      <!-- 菜单列表区域 -->
+      <div class="index-order-con">
+        <div class="view" ref="viewRef">
+          <div class="index-order-desknum" v-if="isShowDeskNum" ref="deskNumRef">
+            <div>台卡号：{{ deskNum }}</div>
+            <div class="desknum-clear" @click="handleDeleteDeskNum">X</div>
+          </div>
+          <ul class="main" ref="mainRef">
+            <li v-for="(item, index) in menuList" :key="item.id"
+              @click="handleSelectMenu(item, index)"
+              :class="{'active': item.id === nowMenuId}">
+              <div class="info">
+                <span class="desc" v-if="item.contain && item.id === nowMenuId">-</span>
+                <span class="desc" v-if="item.contain && item.id != nowMenuId">+</span>
+                <span class="name">{{ item.name }}</span>
+                <span class="num">{{ item.count }}</span>
+                <span class="price">{{ item.price*item.count }}</span>
+              </div>
+              <!-- 子菜单及备注 -->
+              <ul class="sub" v-if="item.contain && item.id === nowMenuId">
+                <li v-for="(subItem, subIndex) in item.contain" :key="subItem.id"
+                  @click.stop="handleSelectSubMenu(subItem.id, item.id, subIndex, index)"
+                  :class="{'subActive': subItem.id === nowSubMenuId}">
+                  <div class="info">
+                    <span class="name">{{ subItem.name }}</span>
+                    <span class="num">{{ subItem.count }}</span>
+                  </div>
+                  <div class="others" v-if="subItem.others">
+                    <span>
+                      备注：{{ subItem.others | prettifyList }}
+                    </span>
+                    <span v-if="subItem.id === nowSubMenuId"
+                      @click.stop="handleClearSubOthers">X</span>
+                  </div>
+                </li>
+              </ul>
+              <!-- 主菜单及备注 -->
+              <div class="others" v-if="item.others">
+                <span>
+                  备注：{{ item.others | prettifyList }}
+                </span>
+                <span v-if="item.id === nowMenuId"
+                  @click.stop="handleClearOthers">X</span>
+              </div>
+            </li>
+            <li class="divider" v-if="menuList.length != 0">
+              -- 我是有底线的 --
+            </li>
+          </ul>
         </div>
-        <ul class="main" ref="contentRef">
-          <li v-for="(item, index) in menuList" :keys="item.id"
-            @click="handleSelectMenu(item, index)"
-            :class="{'active': item.id === nowMenuId}">
-            <div class="info">
-              <span class="desc" v-if="item.contain && item.id === nowMenuId">-</span>
-              <span class="desc" v-if="item.contain && item.id != nowMenuId">+</span>
-              <span class="name">{{ item.name }}</span>
-              <span class="num">{{ item.count }}</span>
-              <span class="price">{{ item.price*item.count }}.00</span>
-            </div>
-            <!-- 子菜单及备注 -->
-            <ul class="sub" v-if="item.contain && item.id === nowMenuId">
-              <li v-for="(subItem, subIndex) in item.contain" :keys="subItem.id"
-                @click.stop="handleSelectSubMenu(subItem.id, item.id, subIndex, index)"
-                :class="{'subActive': subItem.id === nowSubMenuId}">
-                <div class="info">
-                  <span class="name">{{ subItem.name }}</span>
-                  <span class="num">{{ subItem.count }}</span>
-                </div>
-                <div class="others" v-if="subItem.others">
-                  <span>
-                    备注：{{ subItem.others | prettifyList }}
-                  </span>
-                  <span v-if="subItem.id === nowSubMenuId"
-                    @click.stop="handleClearSubOthers">X</span>
-                </div>
-              </li>
-            </ul>
-            <!-- 主菜单及备注 -->
-            <div class="others" v-if="item.others">
-              <span>
-                备注：{{ item.others | prettifyList }}
-              </span>
-              <span v-if="item.id === nowMenuId"
-                @click.stop="handleClearOthers">X</span>
-            </div>
-          </li>
-          <li class="divider" v-if="menuList.length != 0">
-            -- 我是有底线的 --
-          </li>
-        </ul>
-        <div :style="{height: kongHeight + 'px'}"></div>
+        <!-- 支付列表区域 -->
+        <div class="index-order-payList" v-if="isShowPayList" ref="payListRef">
+          <div class="cell">
+            <span>消费合计：</span>
+            <span>{{ totalPrice }}</span>
+          </div>
+          <div class="cell">
+            <span>特价优惠：</span>
+            <span>0</span>
+          </div>
+          <div class="cell">
+            <span>赠送优惠：</span>
+            <span>0</span>
+          </div>
+          <div class="cell" v-for="(item, index) in payList" :key="index"
+            @click="handleSelectPayitem(index)"
+            :class="{payActive: index === nowPayitemIndex}">
+            <span>{{ item.name }}</span>
+            <span>{{ item.price }}</span>
+          </div>
+        </div>
       </div>
-      <div class="index-order-total"
-        v-if="isShowTotal" ref="totalRef">
-        <div class="cell">
-          <span>消费合计：</span>
-          <span>{{ totalPrice }}.00</span>
-        </div>
-        <div class="cell">
-          <span>特价优惠：</span>
-          <span>0.00</span>
-        </div>
-        <div class="cell">
-          <span>赠送优惠：</span>
-          <span>0.00</span>
-        </div>
-      </div>
+
+
+
+      <!-- 尚欠金额、翻页区域 -->
       <div class="index-order-else">
         <div class="left" v-if="smallChange === 0">
           <span>尚欠金额：</span>
-          <span>{{ owePrice }}.00</span>
+          <span>{{ owePrice }}</span>
         </div>
         <div class="left" v-if="smallChange > 0">
           <span>找零：</span>
-          <span>{{ smallChange }}.00</span>
+          <span>{{ smallChange }}</span>
         </div>
         <a href="javascript:;" @click="handleScroll">向下</a>
       </div>
+
     </div>
 
     <!-- 点菜操作区域 -->
     <div class="index-option">
+
+      <!-- 菜类区域 -->
       <div class="index-option-topbar">
         <ul class="table table-data">
-          <li v-for="item in topbarList" :keys="item.id"
-            @click="handleSelectTopbar(item.id)"
+          <li v-for="item in topbarList" :key="item.id"
+            @click="handleChangeDishType(item.id)"
             :class="{'active': nowTopbarId === item.id}">
             <a href="javascript:;">{{ item.name }}</a>
           </li>
         </ul>
         <ul class="table">
           <li></li><li></li><li></li><li></li><li></li>
-          <li class="next" @click="handleTopbarNext">&gt;</li>
+          <li class="next" @click="handleDishTypeNext">&gt;</li>
         </ul>
       </div>
+
+      <!-- 菜品信息区域 -->
       <div class="index-option-con">
         <div class="table table-data">
           <div class="option-item" v-for="item in orderList"
-            :keys="item.id" @click="handleAddDish(item)"
+            :key="item.id" @click="handleAddDish(item)"
             :class="[{bgColor1: item.type === 2}, {bgColor2: item.type === 3},
             {bgColor3: item.type === 4}, {bgColor4: item.type === 5},
             {bgColor5: item.type === 6}, {bgColor6: item.type === 6001},
             {bgColor7: item.type === 6002}]">
             <div class="item-price">
-              {{ item.price }}.00
+              {{ item.price }}
             </div>
             <div class="item-name">{{ item.name }}</div>
             <div class="item-footer">
               <div class="item-real-price" v-if="item.vip === 2">
-                特价：{{ item.nowPrice }}.00
+                特价：{{ item.nowPrice }}
               </div>
               <div class="item-real-price" v-if="item.vip === 1">
-                vip：{{ item.nowPrice }}.00
+                vip：{{ item.nowPrice }}
               </div>
               <div class="item-sheng" v-if="item.count">
                 剩：{{ item.count }}
@@ -147,22 +167,26 @@
           <div class="next" @click="handleOrderNext">&gt;</div>
         </div>
       </div>
+
+      <!-- 备注区域 -->
       <div class="index-option-else">
         <div class="table table-data">
-          <div v-for="(item, index) in othersList" :keys="index"
+          <div v-for="(item, index) in othersList" :key="index"
             @click="handleAddOthers(item)">
             {{ item.name }}
           </div>
         </div>
         <div class="table">
           <div></div><div></div><div></div><div></div>
-          <div class="next" @click="handleElseNext">&gt;</div>
+          <div class="next" @click="handleOthersNext">&gt;</div>
         </div>
       </div>
+
+      <!-- 操控选项区域 -->
       <div class="index-option-handle">
         <table class="handle-keyboard1">
           <tr v-for="tr in keyboardList">
-            <td v-for="td in tr" :keys="td.id"
+            <td v-for="td in tr" :key="td.id"
               @click="handleInputNum(td)">
               {{ td.value }}
             </td>
@@ -182,7 +206,7 @@
             <td @touchstart="clickStart"
               @touchend="clickEnd">删除</td>
             <td>反结</td>
-            <td @click="openMoneyBoxDialog">开钱箱</td>
+            <td @click="handleOpenMoneyBoxDialog">开钱箱</td>
           </tr>
         </table>
         <table class="handle-keyboard3">
@@ -195,7 +219,7 @@
             <td>银行卡</td>
           </tr>
           <tr>
-            <td @click="handleInputMembershipCardNum">会员卡</td>
+            <td @click="handleOpenMemLockDialog">会员卡</td>
             <td>
               <div style="transform: rotate(90deg);">&gt;</div>
             </td>
@@ -204,10 +228,12 @@
       </div>
     </div>
 
+
+    <!-- 弹框组件区域：所有的弹框组件放在下方 -->
     <!-- 钱箱弹框 -->
-    <MoneyBox :isShow="isShowMoneyBoxDialog" @toBigMoney="toBigMoney"
-      @close="handleCloseMoneyBox"
-      @openMoneyBox="openMoneyBox">
+    <MoneyBox :isShow="isShowMoneyBoxDialog" @gotoBigMoney="gotoBigMoney"
+      @close="handleCloseMoneyBoxDialog"
+      @handleOpenMoneyBox="handleOpenMoneyBox">
     </MoneyBox>
 
     <!-- 取大钞弹框 -->
@@ -243,7 +269,7 @@
     <!-- 显示输入会员卡账号窗口 -->
     <KeyboardDialog :isShow="isShowMemCardNumDialog" title="会员卡"
       placeholder="请刷卡/输入会员卡号/输入手机号" :keyboardList="keyboardList"
-      @close="handleCloseMemCardNumDialog" @submit="handleGotoMemCard">
+      @close="handleCloseMemLockDialog" @submit="gotoMemPage">
     </KeyboardDialog>
   </div>
 </template>
@@ -264,6 +290,9 @@ export default {
   },
   data () {
     return {
+      nowPayitemIndex: -1,
+      // 支付列表（点餐列表下方）
+      payList: [],
       // 是否显示会员卡账号窗口
       isShowMemCardNumDialog: false,
       // 支付的部分金额
@@ -282,8 +311,7 @@ export default {
       isShowTaocanDialog: false,
       // 点菜的菜品数量
       dishCount: 1,
-      kongHeight: 0,
-      isShowTotal: false,
+      isShowPayList: false,
       deskNum: '',
       isShowDeskNum: false,
       qudanId: 1,
@@ -292,8 +320,8 @@ export default {
       isShowBigMoneyDialog: false,
       isShowMoneyBoxDialog: false,
 
-      showType: false,
-      showMode: false,
+      isShowTS: false,
+      isShowMode: false,
       inputNum: '',
 
       listSource: [],
@@ -394,7 +422,8 @@ export default {
     // 尚欠款=总消费金额-特价-赠送-支付的部分金额
     owePrice () {
       return this.totalPrice - 0 - 0 - this.partPrice
-    }
+    },
+
   },
   watch: {
     /**
@@ -427,30 +456,18 @@ export default {
       }
     },
 
-    /**
-     * 消费合计模块显示的时候，获取其高度，赋值给 kongHeight
-     * kongHeight：填充内容区域的空白，对比 handleScroll 方法理解
-     */
-    isShowTotal (isShow) {
-      if (isShow) {
-        this.$nextTick(() => {
-          this.kongHeight = this.$refs.totalRef.clientHeight
-        })
-      }
-    },
-
-    // 如果 menuList 有数据，则显示消费合计模块
+    // 如果 menuList 有数据，则显示支付列表
     menuList (menuList) {
       if (menuList.length != 0) {
-        this.isShowTotal = true
+        this.isShowPayList = true
       } else {
-        this.isShowTotal = false
+        this.isShowPayList = false
       }
     },
 
   },
   created () {
-    this.getOrderList()
+    this.getDatas()
   },
   filters: {
     prettifyList (list) {
@@ -459,9 +476,9 @@ export default {
   },
   methods: {
 
-    // 获取菜品数据
-    getOrderList () {
-      axios.get('http://localhost:8080/getOrderList')
+    // 获取数据
+    getDatas () {
+      axios.get('http://localhost:8080/getDatas')
         .then(res => {
           if (res.data.errcode === 0) {
             // 获取一级分类
@@ -525,9 +542,14 @@ export default {
     // 点击菜品，添加一个菜
     handleAddDish (dish) {
       // 点击时清除子选项的状态
-      this.nowSubMenuId = -1
-      // 重置找零金额为0
+      // this.nowSubMenuId = -1
+      // 支付完成之后，再点新菜，需重置找零金额为0
       this.smallChange = 0
+      // 支付过程中添加新菜的判断
+      if (this.payList.length != 0) {
+        this.$toast('请先撤销支付款项！')
+        return
+      }
 
       let newDish = JSON.parse(JSON.stringify(dish))
 
@@ -667,6 +689,8 @@ export default {
 
     // 点击左侧一级菜单
     handleSelectMenu (item, index) {
+      // 先清空支付列表的选中状态
+      this.nowPayitemIndex = -1
       // 点击之前，一级菜单已经选中
       if (this.nowMenuId === item.id) {
         if (item.contain) {
@@ -697,7 +721,7 @@ export default {
       }
     },
 
-    // 点击小键盘1触发的方法
+    // 点击 keyboard1 默认输入到 input 中
     handleInputNum (td) {
       if (td.id === 12) {
         this.inputNum = this.inputNum.substring(0, this.inputNum.length-1)
@@ -707,7 +731,7 @@ export default {
     },
 
     // 切换菜品类别
-    handleSelectTopbar (id) {
+    handleChangeDishType (id) {
       /**
        * 每次切换的时候，需要重置菜品信息页码为1
        * bug 回顾：“全部”状态下，点击下一页（orderPageNum 这时为2了）
@@ -749,13 +773,13 @@ export default {
     },
 
     // 切换堂食/外带
-    changeType () {
-      this.showType = !this.showType
+    handleChangeTS () {
+      this.isShowTS = !this.isShowTS
     },
 
     // 切换点菜/退菜模式
-    changeMode () {
-      this.showMode = !this.showMode
+    handleChangeDishMode () {
+      this.isShowMode = !this.isShowMode
     },
 
     // 长按删除订单
@@ -766,16 +790,42 @@ export default {
         if (this.menuList.length === 0) {
           this.$toast('没有订单')
         } else {
+          // 支付过程中删除订单的判断
+          if (this.payList.length != 0) {
+            this.$toast('请先撤销支付款项！')
+            return
+          }
           this.isShowDeleteMenuListDialog = true
         }
       }, 1000)
     },
 
-    // 短按删除菜品
+    // 短按删除菜品/支付款项
     clickEnd () {
       clearInterval(this.Loop)
       this.stampEnd = new Date().getTime()
       if (this.stampEnd - this.stampStart < 1000) {
+
+        // 首先要判断是否有支付款项（支付过程中删除菜品的判断）
+        if (this.payList.length != 0) {
+          // 支付款项被选中的话，删除当前支付选项
+          if (this.nowPayitemIndex != -1) {
+            for (let i=0;i<this.payList.length;i++) {
+              if (this.nowPayitemIndex === i) {
+                this.payList.splice(i, 1)
+              }
+            }
+            this.nowPayitemIndex = -1
+            // 打开钱箱的操作
+          }
+          // 菜品被选中，支付款项未被选中
+          if (this.nowMenuIndex != -1) {
+            this.$toast('请先撤销支付款项！')
+            return
+          }
+        }
+
+        // 没有支付列表的话直接删除菜品
         if (this.nowMenuIndex != -1) {
           // 从 menuList 中删除菜品
           this.menuList.splice(this.nowMenuIndex, 1)
@@ -838,7 +888,7 @@ export default {
 
     },
 
-    // 添加父级备注
+    // 添加备注到父级
     addOthers (index, item, oList) {
       if (item.others) {
         let flag = false
@@ -862,7 +912,7 @@ export default {
       this.menuList.splice(index, 1, item)
     },
 
-    // 添加子级备注
+    // 添加备注到子级
     addSubOthers (subIndex, subItem, oList, index) {
       if (subItem.others) {
         let flag = false
@@ -887,7 +937,7 @@ export default {
     },
 
     // 获取下一页的备注信息
-    handleElseNext () {
+    handleOthersNext () {
       /**
        * 当点击下一页备注信息按钮时，先判断当前是否有菜品选中
        * 如果没有选中任何菜品，则清空 othersList
@@ -970,7 +1020,7 @@ export default {
     },
 
     // 获取下一页的菜品分类信息
-    handleTopbarNext () {
+    handleDishTypeNext () {
       let list = this.topbarListSource
       let nextPageNum = this.topbarPageNum + 1
       let startIndex = nextPageNum * this.topbarPageSize - this.topbarPageSize
@@ -987,23 +1037,23 @@ export default {
     },
 
     // 点击“开钱箱”按钮，打开钱箱弹窗
-    openMoneyBoxDialog () {
+    handleOpenMoneyBoxDialog () {
       this.isShowMoneyBoxDialog = true
     },
 
     // 关闭钱箱的弹窗
-    handleCloseMoneyBox () {
+    handleCloseMoneyBoxDialog () {
       this.isShowMoneyBoxDialog = false
     },
 
-    // 打开真正的钱箱
-    openMoneyBox () {
+    // 打开钱箱
+    handleOpenMoneyBox () {
       this.isShowMoneyBoxDialog = false
-      this.$toast('打开真正的钱箱')
+      this.$toast('打开钱箱')
     },
 
-    // 到取大钞页
-    toBigMoney () {
+    // 到取大钞弹窗
+    gotoBigMoney () {
       this.isShowMoneyBoxDialog = false
       this.isShowBigMoneyDialog = true
     },
@@ -1081,10 +1131,14 @@ export default {
       localStorage.setItem('list', JSON.stringify(this.qudanList))
     },
 
-    // 在窗口中取一个订单
+    // 取单，在窗口中取一个订单
     selectItemOfQudan (item) {
       this.isShowQudanDialog = false
       this.menuList = item.data
+      if (item.deskNum != '') {
+        this.deskNum = item.deskNum
+        this.isShowDeskNum = true
+      }
       let list = this.qudanList
       for (let i=0;i<list.length;i++) {
         if (list[i].id === item.id) {
@@ -1123,7 +1177,7 @@ export default {
     // 向下滚动一段距离
     handleScroll () {
       // 获取 dom 对象
-      let content  = this.$refs.contentRef
+      let main  = this.$refs.mainRef
       let deskNum = this.$refs.deskNumRef
       let view = this.$refs.viewRef
 
@@ -1131,14 +1185,14 @@ export default {
       let viewHeight = view.clientHeight
 
       // 计算内容区域的高度
-      let contentHeight
+      let conHeight
       if (deskNum) {
-        contentHeight = content.clientHeight + deskNum.clientHeight + this.kongHeight
+        conHeight = main.clientHeight + deskNum.clientHeight
       } else {
-        contentHeight = content.clientHeight + this.kongHeight
+        conHeight = main.clientHeight
       }
 
-      if (viewHeight + view.scrollTop < contentHeight) {
+      if (viewHeight + view.scrollTop < conHeight) {
         view.scrollBy(0, 50)
       } else {
         view.scrollTo(0, 0)
@@ -1178,43 +1232,82 @@ export default {
         this.inputNum = ''
         return
       }
-      let num = Number(this.inputNum)
-      // 不输入金额或输入的金额刚刚好
-      if (this.inputNum === '' || num === this.owePrice) {
-        this.menuList = [] // totalPrice 为 0
-        this.partPrice = 0 // owePrice 为 0
-        this.deskNum = ''
-        this.isShowDeskNum = false
+
+      // 过滤输入的值
+      if (this.inputNum === '.') {
+        this.$toast('输入错误！')
         this.inputNum = ''
-        this.isShowMoneyBoxDialog = true
-      } else if (num > this.owePrice) { // 超额支付现金
-        this.smallChange = num - this.owePrice
-        this.menuList = []
-        this.deskNum = ''
-        this.isShowDeskNum = false
-        this.inputNum = ''
-        this.isShowMoneyBoxDialog = true
-      } else { // 支付部分现金
-        this.partPrice += num
-        this.inputNum = ''
+        return
       }
+
+      // 未输入金额，默认现金支付全部款
+      let num = Number(this.inputNum)
+      if (this.inputNum === '') {
+        this.menuList = [] // （总价）totalPrice 为 0
+        this.partPrice = 0 // （部分金额）owePrice 为 0
+        this.deskNum = ''
+        this.isShowDeskNum = false
+        this.inputNum = ''
+        this.isShowMoneyBoxDialog = true
+      } else {
+        if (num > this.owePrice) { // 超额支付现金
+          this.smallChange = num - this.owePrice
+          this.menuList = []
+          this.deskNum = ''
+          this.isShowDeskNum = false
+          this.inputNum = ''
+          this.isShowMoneyBoxDialog = true
+        } else if (num < this.owePrice) { // 支付部分现金
+          if (num === 0) {
+            this.inputNum = ''
+            this.$toast('不能为0')
+            return
+          }
+          this.partPrice += num
+          this.inputNum = ''
+        } else { // 支付金额刚刚好
+          this.menuList = []
+          this.partPrice = 0
+          this.deskNum = ''
+          this.isShowDeskNum = false
+          this.inputNum = ''
+          this.isShowMoneyBoxDialog = true
+        }
+      }
+
+      // 添加支付信息到 payList
+      let item = {
+        name: '现金',
+        price: num
+      }
+      this.payList.push(item)
     },
 
-    // 输入会员卡账号
-    handleInputMembershipCardNum () {
+    // 点击“会员卡”按钮
+    handleOpenMemLockDialog () {
       this.isShowMemCardNumDialog = true
     },
 
     // 关闭会员卡窗口
-    handleCloseMemCardNumDialog () {
+    handleCloseMemLockDialog () {
       this.isShowMemCardNumDialog = false
     },
 
     // 跳转到会员卡页面
-    handleGotoMemCard () {
+    gotoMemPage () {
       this.isShowMemCardNumDialog = false
       // 如果只有一张卡则直接打开，
       // 如果有多张会员卡则跳转到选择会员卡的页面
+    },
+
+    // 选择支付列表的一项
+    handleSelectPayitem (index) {
+      this.nowPayitemIndex = index
+      // 取消所有菜品的选中状态
+      this.nowMenuIndex = -1
+      this.nowMenuId = -1
+      this.nowSubMenuIndex = -1
+      this.nowSubMenuId = -1
     }
 
   }
@@ -1227,7 +1320,6 @@ export default {
   height: 748px;
   margin-right: 10px;
   margin-top: 10px;
-  position: relative;
   .index-order-top {
     height: 60px;
     border: 1px solid $border-color-lighter;
@@ -1304,112 +1396,118 @@ export default {
     height: 563px;
     border: 1px solid $border-color-lighter;
     border-bottom: none;
-    overflow-y: scroll;
-    .index-order-desknum {
-      border-bottom: 1px solid $border-color-lighter;
-      background-color: #f8f8f8;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-left: 10px;
-      height: 40px;
-      box-sizing: border-box;
-      .desknum-clear {
-        color: #DBDBDB;
-        font-size: 16px;
-        box-sizing: border-box;
-        padding: 0 15px;
-        height: 100%;
+    display: flex;
+    flex-direction: column;
+    .view {
+      flex: 1;
+      overflow-y: scroll;
+      .index-order-desknum {
+        border-bottom: 1px solid $border-color-lighter;
+        background-color: #f8f8f8;
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
-      }
-    }
-    .main {
-      li {
-        border-bottom: 1px solid #f5f5f5;
-        .info {
+        padding-left: 10px;
+        height: 40px;
+        box-sizing: border-box;
+        .desknum-clear {
+          color: #DBDBDB;
+          font-size: 16px;
+          box-sizing: border-box;
+          padding: 0 15px;
+          height: 100%;
           display: flex;
+          justify-content: center;
           align-items: center;
-          padding: 8px 5px;
-          color: #666666;
-          padding-left: 20px;
-          padding-right: 10px;
-          position: relative;
-          span.desc {
-            position: absolute;
-            left: 5px;
-          }
-          span.name {
-            width: 160px;
-            margin-right: 10px;
-            // color: #000000;
-            font-weight: bold;
-          }
-          span.num {
-            width: 40px;
-            text-align: right;
-            margin-right: 10px;
-          }
-          span.price {
-            width: 68px;
-            text-align: right;
-          }
         }
-        .sub {
-          li {
-            border-bottom: none;
-            .info span.name{
-              color: #868686;
-              font-weight: normal;
+      }
+      .main {
+        li {
+          border-bottom: 1px solid #f5f5f5;
+          .info {
+            display: flex;
+            align-items: center;
+            padding: 8px 5px;
+            color: #666666;
+            padding-left: 20px;
+            padding-right: 10px;
+            position: relative;
+            span.desc {
+              position: absolute;
+              left: 5px;
+            }
+            span.name {
+              width: 160px;
+              margin-right: 10px;
+              // color: #000000;
+              font-weight: bold;
+            }
+            span.num {
+              width: 40px;
+              text-align: right;
+              margin-right: 10px;
+            }
+            span.price {
+              width: 68px;
+              text-align: right;
             }
           }
-          li.subActive {
-            background-color: #f0f0f0;
+          .sub {
+            li {
+              border-bottom: none;
+              .info span.name{
+                color: #868686;
+                font-weight: normal;
+              }
+            }
+            li.subActive {
+              background-color: #f0f0f0;
+            }
+          }
+          .others {
+            color: #cccccc;
+            font-size: 14px;
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            span:nth-child(1) {
+              padding-left: 15px;
+            }
+            span:nth-child(2) {
+              padding: 0 15px;
+            }
           }
         }
-        .others {
-          color: #cccccc;
-          font-size: 14px;
-          padding: 5px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          span:nth-child(1) {
-            padding-left: 15px;
-          }
-          span:nth-child(2) {
-            padding: 0 15px;
-          }
+        li.active {
+          background-color: #f8f8f8;
         }
-      }
-      li.active {
-        background-color: #f8f8f8;
-      }
-      li.divider {
-        text-align: center;
-        font-size: 12px;
-        color: #dfdfdf;
-        border-bottom: none;
-        padding: 10px 0;
+        li.divider {
+          text-align: center;
+          font-size: 12px;
+          color: #dfdfdf;
+          border-bottom: none;
+          padding: 10px 0;
+        }
       }
     }
-  }
-  .index-order-total {
-    border: 1px solid $border-color-lighter;
-    border-bottom: none;
-    box-sizing: border-box;
-    padding: 5px 0;
-    position: absolute;
-    bottom: 62px;
-    width: 100%;
-    background-color: #fff;
-    .cell {
-      height: 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 10px;
+    .index-order-payList {
+      flex: 0 0 auto;
+      border-top: 1px solid $border-color-lighter;
+      box-sizing: border-box;
+      padding: 5px 0;
+      width: 100%;
+      background-color: #fff;
+      .cell {
+        height: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+      }
+      .cell.payActive {
+        background-color: #f5f5f5;
+      }
     }
   }
   .index-order-else {

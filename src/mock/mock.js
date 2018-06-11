@@ -1,6 +1,15 @@
 import Mock from 'mockjs'
 
-Mock.mock(/getOrderList/, {
+Mock.mock(/login/, {
+  "errcode": 0,
+  "msg": "登录成功",
+  "epid": 1,
+  "epname": "张三",
+  "shiftflag": 0,
+  "privilege": ['brandEdit', 'brandEdit']
+})
+
+Mock.mock(/getDatas/, {
   'errcode': 0,
   'errmsg': 'error',
   'data': [

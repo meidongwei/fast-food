@@ -17,9 +17,11 @@
         <div class="login-box">
           <p>当前门店：亚运村店</p>
           <input type="text" class="input input-user"
-            placeholder="请输入您的工号" v-model="usernum">
+            placeholder="请输入您的工号" v-model="userno"
+            @focus="handleOpenKeyboard1">
           <input type="password" class="input input-pwd"
-            placeholder="请输入密码" v-model="password">
+            placeholder="请输入密码" v-model="password"
+            @focus="handleOpenKeyboard2">
           <button class="btn"
             :class="[{'btn-primary': isLogin}, {'btn-allowed': !isLogin}]"
             :disabled="!isLogin" @click="login">登录</button>
@@ -44,21 +46,37 @@
     </GeneralDialog>
     <PwdDialog :isShow="isShowPwdDialog" @close="handleClosePwdDialog">
     </PwdDialog>
+    <Keypad :isShow="isShowKeypad1" @handleInputNum="handleInputNum1"
+      @handleClearInput="handleClearInput1" @close="handleCloseKeypad1"
+      :height="keyboardHeight1">
+    </Keypad>
+    <Keypad :isShow="isShowKeypad2" @handleInputNum="handleInputNum2"
+      @handleClearInput="handleClearInput2" @close="handleCloseKeypad2"
+      :height="keyboardHeight2">
+    </Keypad>
   </div>
 </template>
 
 <script>
 import GeneralDialog from '@/components/dialog/generalDialog'
 import PwdDialog from '@/components/dialog/pwdDialog'
+import Keypad from '@/components/keypad'
+import axios from 'axios'
+import httpUrl from '@/http_url'
 export default {
   components: {
     GeneralDialog,
-    PwdDialog
+    PwdDialog,
+    Keypad
   },
   data () {
     return {
+      keyboardHeight1: 0,
+      keyboardHeight2: 0,
+      isShowKeypad1: false,
+      isShowKeypad2: false,
       isShowStart: true,
-      usernum: '',
+      userno: '',
       password: '',
       isLogin: false,
       isShowQuiteDialog: false,
@@ -72,13 +90,13 @@ export default {
   },
   computed: {
     checkedInput () {
-      const { usernum, password } = this
-      return { usernum, password }
+      const { userno, password } = this
+      return { userno, password }
     }
   },
   watch: {
     checkedInput (val) {
-      if (val.usernum !== '' && val.password !== '') {
+      if (val.userno !== '' && val.password !== '') {
         this.isLogin = true
       } else {
         this.isLogin = false
@@ -87,11 +105,28 @@ export default {
   },
   methods: {
     login () {
-      if (this.usernum === '123' && this.password === '123') {
-        this.$router.push({name: 'index'})
-      } else {
-        alert('用户名或密码错误！')
+      let a = {
+        epno: this.userno,
+        userpwd: this.password
       }
+      let data = "bizContent=" + JSON.stringify(a)
+      axios({
+        method: "post",
+        url: httpUrl.login,
+        headers: {
+          'Content-type': 'application/x-www-form-urlencoded'
+        },
+        data: data
+      })
+      .then(res => {
+        if (res.data.errcode === 0) {
+          this.$toast(res.data.msg)
+          this.$router.push({name: 'index'})
+        } else {
+          this.$toast(res.data.msg)
+        }
+      })
+      .catch(err => console.log(err))
     },
     handleShowQuiteDialog () {
       this.isShowQuiteDialog = true
@@ -99,15 +134,60 @@ export default {
     handleCloseQuiteDialog () {
       this.isShowQuiteDialog = false
     },
-    handleShowFtpDialog () {
-      this.isShowFtpDialog = true
-    },
     handleShowPwdDialog () {
       this.isShowPwdDialog = true
     },
     handleClosePwdDialog () {
       this.isShowPwdDialog = false
-    }
+    },
+
+    // 打开小键盘
+    handleOpenKeyboard1 () {
+      this.keyboardHeight1 = 322
+      this.isShowKeypad2 = false
+      this.isShowKeypad1 = true
+    },
+
+    // 输入
+    handleInputNum1 (val) {
+      if (val.id === 12) {
+        this.userno = this.userno.substring(0, this.userno.length-1)
+      } else {
+        this.userno += val.value
+      }
+    },
+
+    // 点击小键盘上“清空”，清空输入框
+    handleClearInput1 () {
+      this.userno = ''
+    },
+
+    // 点击小键盘上“确定”，关闭小键盘
+    handleCloseKeypad1 () {
+      this.isShowKeypad1 = false
+    },
+
+    handleOpenKeyboard2 () {
+      this.keyboardHeight2 = 400
+      this.isShowKeypad1 = false
+      this.isShowKeypad2 = true
+    },
+
+    handleInputNum2 (val) {
+      if (val.id === 12) {
+        this.password = this.password.substring(0, this.password.length-1)
+      } else {
+        this.password += val.value
+      }
+    },
+
+    handleClearInput2 () {
+      this.password = ''
+    },
+
+    handleCloseKeypad2 () {
+      this.isShowKeypad2 = false
+    },
   }
 }
 </script>

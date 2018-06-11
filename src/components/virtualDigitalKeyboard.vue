@@ -1,7 +1,7 @@
 <template>
   <table>
     <tr v-for="tr in list">
-      <td v-for="td in tr" :keys="td.id"
+      <td v-for="td in tr" :key="td.id"
         @click="handleInputNum(td)">
         {{ td.value }}
       </td>

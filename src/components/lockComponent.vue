@@ -7,8 +7,7 @@
           <div class="form-group">
             <label for="cardnum">会员卡号：</label>
             <input id="cardnum" type="text" class="form-control"
-              v-model="cardnum"
-              placeholder="请刷卡/输入会员卡号/手机号">
+              v-model="cardnum" placeholder="请刷卡/输入会员卡号/手机号">
           </div>
           <VirtualKeyboard @handleInputNum="handleInputNum"></VirtualKeyboard>
         </div>
@@ -46,10 +45,10 @@ export default {
   },
   methods: {
     handleInputNum (val) {
-      if (val === 'x') {
+      if (val.id === 12) {
         this.cardnum = this.cardnum.substring(0, this.cardnum.length-1)
       } else {
-        this.cardnum += val
+        this.cardnum += val.value
       }
     },
     handleSubmit () {

@@ -60,7 +60,7 @@
         </div>
         <div class="con-list">
           <ul>
-            <li v-for="item in couponList" :keys="item.id">
+            <li v-for="item in couponList" :key="item.id">
               <span class="type"
                 :class="item.type === '代' ? 'type-color1' : 'type-color2'">
                 {{ item.type }}

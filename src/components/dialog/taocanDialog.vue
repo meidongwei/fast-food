@@ -6,7 +6,7 @@
         <h2>【{{ dish.name }}】金额：{{ dish.price }}.00</h2>
         <div class="topbar">
           <ul class="table table-data">
-            <li v-for="item in topbarList" :keys="item.id">
+            <li v-for="item in topbarList" :key="item.id">
               <a href="javascript:;">{{ item.name }}</a>
             </li>
           </ul>
@@ -21,7 +21,7 @@
         <div class="con">
           <div class="table table-data">
             <div class="option-item" v-for="item in orderList"
-              :keys="item.id">
+              :key="item.id">
               <div class="item-price">
                 <!-- {{ item.price }}.00 -->
               </div>
@@ -43,7 +43,7 @@
         </div>
         <div class="others">
           <div class="table table-data">
-            <div v-for="(item, index) in topbarList" :keys="index">
+            <div v-for="(item, index) in topbarList" :key="index">
               {{ item.name }}
             </div>
           </div>

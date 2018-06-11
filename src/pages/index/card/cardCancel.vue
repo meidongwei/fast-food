@@ -10,7 +10,7 @@
       <SegmentRightContent class="right-con">
         <CardBaseInfo></CardBaseInfo>
         <div class="cancelList">
-          <div class="item" v-for="item in cancelList" :keys="item.id">
+          <div class="item" v-for="item in cancelList" :key="item.id">
             <table>
               <tr>
                 <td>{{ item.id }}</td>

@@ -29,9 +29,9 @@
     </template>
     <template slot="footer">
       <a href="javascript:;" class="btn btn-default"
-        @click="toBigMoney">取大钞</a>
+        @click="gotoBigMoney">取大钞</a>
       <a href="javascript:;" class="btn btn-primary"
-        @click="openMoneyBox">开钱箱</a>
+        @click="handleOpenMoneyBox">开钱箱</a>
     </template>
   </DialogWrapper>
 </template>
@@ -65,11 +65,11 @@ export default {
         this.cardnum += val.value
       }
     },
-    toBigMoney () {
-      this.$emit('toBigMoney')
+    gotoBigMoney () {
+      this.$emit('gotoBigMoney')
     },
-    openMoneyBox () {
-      this.$emit('openMoneyBox')
+    handleOpenMoneyBox () {
+      this.$emit('handleOpenMoneyBox')
     },
     close () {
       this.$emit('close')
