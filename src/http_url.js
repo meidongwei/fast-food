@@ -7,6 +7,7 @@ let httpUrl = {
   'login': _host + 'login', // 登录
   'changePwd': _host + 'changePwd', // 修改密码
   'saveByj': _host + 'saveByj', // 领备用金
+  'startShift': _host + 'startShift', // 查询支付方式
 }
 
 export default httpUrl

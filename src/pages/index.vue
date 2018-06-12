@@ -145,8 +145,8 @@ export default {
           this.isShowSpareGoldDialog = true
         }
       } else if (this.shiftflag === 1) { // 有未关班记录
-        this.$toast('有未关班记录')
-        // 弹未关班记录的框
+        // 跳转到交班关班页面
+        this.$router.push({name: 'close'})
       }
     },
 
@@ -195,7 +195,6 @@ export default {
     // 关闭备用金窗口
     handleCloseSpareGoldDialog (val) {
       this.isShowSpareGoldDialog = false
-      console.log(val)
     },
 
     // 实时显示时间

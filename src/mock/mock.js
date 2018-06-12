@@ -1,20 +1,39 @@
 import Mock from 'mockjs'
 
+// 登录
 Mock.mock(/login/, {
   "errcode": 0,
   "msg": "登录成功",
   "epid": 1,
   "epname": "张三",
-  "shiftflag": 0,
+  "shiftflag": 1,
   "shift": 1, // 班次，如果为1则弹领备用金
   "privilege": ['brandEdit', 'brandEdit']
 })
 
+// 领备用金
 Mock.mock(/saveByj/, {
   "errcode": 0,
   "msg": "领取备用金成功"
 })
 
+
+// 查询支付方式（交班关班）
+Mock.mock(/startShift/, {
+  "errcode":0,
+  "msg":"",
+  "payments":[
+    {
+      "pmid": 1,
+      "pmname": '现金',
+      "amount": 280.5,
+      "ismustinput": 0
+    }
+  ]
+})
+
+
+// 菜品大接口
 Mock.mock(/getDatas/, {
   'errcode': 0,
   'errmsg': 'error',
