@@ -272,8 +272,13 @@
 
     <!-- 会员卡列表窗口 -->
     <MemCardListDialog :isShow="isShowMemCardListDialog"
-      @close="handleCloseMemCardListDialog">
+      @close="handleCloseMemCardListDialog"
+      @gotoInfo="gotoMemInfo">
     </MemCardListDialog>
+
+    <!-- 会员卡详情窗口 -->
+    <MemCardInfoDialog :isShow="isShowMemCardInfoDialog">
+    </MemCardInfoDialog>
   </div>
 </template>
 
@@ -287,14 +292,20 @@ import GeneralDialog from '@/components/dialog/generalDialog'
 import GeneralDialog2 from '@/components/dialog/generalDialog2'
 import KeyboardDialog from '@/components/dialog/keyboardDialog'
 import MemCardListDialog from '@/components/dialog/memCardListDialog'
+import MemCardInfoDialog from '@/components/dialog/memCardInfoDialog'
 export default {
   components: {
     MoneyBox, BigMoneyDialog, QudanDialog, TaocanDialog,
     GeneralDialog, GeneralDialog2, KeyboardDialog,
-    MemCardListDialog
+    MemCardListDialog, MemCardInfoDialog
   },
   data () {
     return {
+      epid: '',
+      shiftflag: 0, // 没有未关班记录
+      privilege: [], // 权限
+      shift: 1, // 班次
+      isShowMemCardInfoDialog: false,
       isShowMemCardListDialog: false,
       tmpPrice: 0,
       nowPayitemIndex: -1,
@@ -472,8 +483,10 @@ export default {
       }
     },
 
+
   },
   created () {
+    this.getLocalDatas()
     this.getDatas()
   },
   filters: {
@@ -482,6 +495,13 @@ export default {
     }
   },
   methods: {
+    // 获取本地数据
+    getLocalDatas () {
+      this.epid = JSON.parse(localStorage.getItem('epid'))
+      this.shiftflag = JSON.parse(localStorage.getItem('shiftflag'))
+      this.privilege = JSON.parse(localStorage.getItem('privilege'))
+      this.shift = JSON.parse(localStorage.getItem('shift'))
+    },
 
     // 获取数据
     getDatas () {
@@ -1319,6 +1339,12 @@ export default {
     // 关闭选择会员卡页面
     handleCloseMemCardListDialog () {
       this.isShowMemCardListDialog = false
+    },
+
+    // 跳转到会员详情页
+    gotoMemInfo () {
+      this.isShowMemCardListDialog = false
+      this.isShowMemCardInfoDialog = true
     },
 
     // 选择支付列表的一项

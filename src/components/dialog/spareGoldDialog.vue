@@ -14,7 +14,7 @@
       <a href="javascript:;" class="btn btn-default"
         @click="close">取消</a>
       <a href="javascript:;" class="btn btn-primary"
-        @click="close">确定</a>
+        @click="submit">确定</a>
     </template>
   </DialogWrapper>
 </template>
@@ -63,14 +63,17 @@ export default {
   },
   methods: {
     handleInputNum (val) {
-      if (val === 'x') {
+      if (val.id === 12) {
         this.inputNum = this.inputNum.substring(0, this.inputNum.length-1)
       } else {
-        this.inputNum += val
+        this.inputNum += val.value
       }
     },
     close () {
-      this.$emit('close', Number(this.inputNum))
+      this.$emit('close')
+    },
+    submit () {
+      this.$emit('submit', Number(this.inputNum))
     }
   }
 }

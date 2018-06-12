@@ -37,20 +37,27 @@
 
 
       <!-- 备用金窗口 -->
-    <!-- <SpareGoldDialog :isShow="isShowSpareGoldDialog"
-      @close="handleCloseSpareGoldDialog"></SpareGoldDialog> -->
+    <SpareGoldDialog :isShow="isShowSpareGoldDialog"
+      @close="handleCloseSpareGoldDialog"
+      @submit="handleSaveByj">
+    </SpareGoldDialog>
   </div>
 </template>
 
 <script>
 import SpareGoldDialog from '@/components/dialog/spareGoldDialog'
+import axios from 'axios'
+import httpUrl from '@/http_url'
 export default {
   components: {
     SpareGoldDialog
   },
   data () {
     return {
-      isShowSpareGoldDialog: true,
+      epid: 0,
+      shiftflag: 0,
+      shift: 1,
+      isShowSpareGoldDialog: false,
       nowTime: '',
       isSelect: 'order',
       sidebarList1: [
@@ -94,6 +101,7 @@ export default {
     }
   },
   created () {
+    this.getLocalDatas()
     this.getTime()
   },
   mounted () {
@@ -123,6 +131,51 @@ export default {
     }
   },
   methods: {
+    // 获取本地数据
+    getLocalDatas () {
+      this.epid = JSON.parse(localStorage.getItem('epid'))
+      this.shiftflag = JSON.parse(localStorage.getItem('shiftflag'))
+      // this.privilege = JSON.parse(localStorage.getItem('privilege'))
+      this.shift = JSON.parse(localStorage.getItem('shift'))
+
+      // 没有未关班记录
+      if (this.shiftflag === 0) {
+        // 班次为1表示该账户第一次登录
+        if (this.shift === 1) {
+          this.isShowSpareGoldDialog = true
+        }
+      } else if (this.shiftflag === 1) { // 有未关班记录
+        this.$toast('有未关班记录')
+        // 弹未关班记录的框
+      }
+    },
+
+    // 备用金
+    handleSaveByj (money) {
+      let a = {
+        epid: this.epid,
+        money: money
+      }
+      let data = "bizContent=" + JSON.stringify(a)
+      axios({
+        method: "post",
+        url: httpUrl.saveByj,
+        headers: {
+          'Content-type': 'application/x-www-form-urlencoded'
+        },
+        data: data
+      })
+      .then(res => {
+        if (res.data.errcode === 0) {
+          this.$toast(res.data.msg)
+          this.isShowSpareGoldDialog = false
+        } else {
+          this.$toast(res.data.msg)
+        }
+      })
+      .catch(err => console.log(err))
+    },
+
     // 页面跳转
     goto (val) {
       this.$router.push({name: val.name})

@@ -121,6 +121,12 @@ export default {
       .then(res => {
         if (res.data.errcode === 0) {
           this.$toast(res.data.msg)
+          // 常用信息存到本地
+          localStorage.setItem('epid', JSON.stringify(res.data.epid))
+          localStorage.setItem('shiftflag', JSON.stringify(res.data.shiftflag))
+          localStorage.setItem('privilege', JSON.stringify(res.data.privilege))
+          localStorage.setItem('shift', JSON.stringify(res.data.shift))
+          // 跳转
           this.$router.push({name: 'index'})
         } else {
           this.$toast(res.data.msg)

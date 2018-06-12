@@ -6,7 +6,13 @@ Mock.mock(/login/, {
   "epid": 1,
   "epname": "张三",
   "shiftflag": 0,
+  "shift": 1, // 班次，如果为1则弹领备用金
   "privilege": ['brandEdit', 'brandEdit']
+})
+
+Mock.mock(/saveByj/, {
+  "errcode": 0,
+  "msg": "领取备用金成功"
 })
 
 Mock.mock(/getDatas/, {

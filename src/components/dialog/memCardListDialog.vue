@@ -5,7 +5,7 @@
       <div class="con">
         <p class="title"> 手机号<span>18503118888</span> 关联了 <span>3</span> 张微生活会员卡，请选择：</p>
         <ul>
-          <li>
+          <li @click="gotoInfo">
             <div class="top">
               <div class="left">微信电子卡</div>
               <div class="center">卜蒙蒙</div>
@@ -13,7 +13,7 @@
             </div>
             <div class="bottom">上次使用时间：2016-05-18 17:59:00</div>
           </li>
-          <li>
+          <li @click="gotoInfo">
             <div class="top">
               <div class="left">微信电子卡</div>
               <div class="center">卜蒙蒙</div>
@@ -21,7 +21,7 @@
             </div>
             <div class="bottom">上次使用时间：2016-05-18 17:59:00</div>
           </li>
-          <li>
+          <li @click="gotoInfo">
             <div class="top">
               <div class="left">微信电子卡</div>
               <div class="center">卜蒙蒙</div>
@@ -58,6 +58,9 @@ export default {
   methods: {
     close () {
       this.$emit('close')
+    },
+    gotoInfo () {
+      this.$emit('gotoInfo')
     }
   }
 }
